@@ -25,13 +25,17 @@ const extension: JupyterFrontEndPlugin<void> = {
     console.log('JupyterLab extension jupyterlab-apod is activated!');
 
     const content = new Widget();
+    content.addClass('my-apodWidget');
     const widget = new MainAreaWidget({ content });
     widget.id = 'apod-jupyterlab';
     widget.title.label = 'Astronomy Picture';
     widget.title.closable = true;
 
-    let image = document.createElement('img');
+    const image = document.createElement('img');
     content.node.appendChild(image);
+
+    const summary = document.createElement('p');
+    content.node.appendChild(summary);
 
     function randomDate(): string {
       const start = new Date(2010, 1, 1);
@@ -45,13 +49,28 @@ const extension: JupyterFrontEndPlugin<void> = {
     const response = await fetch(
       `https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&date=${randomDate()}`
     );
-    const data = (await response.json()) as IAPODResponse;
 
-    if (data.media_type === 'image') {
-      image.src = data.url;
-      image.title = data.title;
+    if (!response.ok) {
+      // error handling
+      const data = await response.json();
+      if (data.error) {
+        summary.innerText = data.error.message;
+      } else {
+        summary.innerText = response.statusText;
+      }
     } else {
-      console.error('Not a picture, yo');
+      const data = (await response.json()) as IAPODResponse;
+
+      if (data.media_type === 'image') {
+        image.src = data.url;
+        image.title = data.title;
+        summary.innerText = data.title;
+        summary.innerText += data.copyright
+          ? `   (Copyright ${data.copyright})`
+          : '';
+      } else {
+        console.error('Not a picture, yo');
+      }
     }
 
     const command = 'apod:open';
