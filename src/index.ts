@@ -1,23 +1,12 @@
 import {
+  ILayoutRestorer,
   JupyterFrontEnd,
-  JupyterFrontEndPlugin,
-  ILayoutRestorer
+  JupyterFrontEndPlugin
 } from '@jupyterlab/application';
-
+import { ICommandPalette, WidgetTracker } from '@jupyterlab/apputils';
 import { IDocumentManager } from '@jupyterlab/docmanager';
-
-import {
-  MainAreaWidget,
-  ICommandPalette,
-  WidgetTracker
-} from '@jupyterlab/apputils';
-
-import { ILauncher } from '@jupyterlab/launcher';
-import { reactIcon } from '@jupyterlab/ui-components';
-
-import { CounterWidget } from './widget';
-import { ButtonExtension } from './button';
 import { ExamplePanel } from './panel';
+
 /**
  * The command IDs used by the react-widget plugin.
  */
@@ -44,7 +33,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     async function createPanel(): Promise<ExamplePanel> {
       if (!widget) {
-        widget = new ExamplePanel();
+        widget = new ExamplePanel(app);
         // widget = new MainAreaWidget<CounterWidget>({ content });
         widget.id = 'model-card';
         widget.title.label = 'Model Card';

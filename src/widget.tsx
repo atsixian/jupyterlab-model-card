@@ -1,14 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { ReactWidget } from '@jupyterlab/apputils';
-import { Button, Typography, Input } from 'antd';
+import { ReactWidget, UseSignal } from '@jupyterlab/apputils';
+import { INotebookModel, NotebookModel } from '@jupyterlab/notebook';
+import { Message } from '@lumino/messaging';
+import { Button, Input, Typography } from 'antd';
+import 'antd/dist/antd.css';
 import React, { useState } from 'react';
 import * as ReactDOM from 'react-dom';
-import { Message } from '@lumino/messaging';
-import 'antd/dist/antd.css';
 import DiffViewer from './diff';
-import { INotebookModel, NotebookPanel } from '@jupyterlab/notebook';
-import { DocumentRegistry } from '@jupyterlab/docregistry';
-import { DisposableDelegate, IDisposable } from '@lumino/disposable';
 const { Title } = Typography;
 const { TextArea } = Input;
 
@@ -25,12 +23,15 @@ const mock = {
   references: { title: 'References', link: [] as string[] }
 };
 
+interface IProps {
+  model: INotebookModel;
+}
 /**
  * React component for a counter.
  *
  * @returns The React component
  */
-const CounterComponent = (): JSX.Element => {
+const CounterComponent = ({ model }: IProps): JSX.Element => {
   const [title, setTitle] = useState(mock.modelname);
   const [author, setAuthor] = useState(mock.authorinfo);
   const [description, setDescription] = useState(mock.dataset.description);
@@ -40,10 +41,12 @@ const CounterComponent = (): JSX.Element => {
       `Model Name: ${title}\nAuthor: ${author}\nDescription: ${description}`
     );
   };
-
   return (
     <>
       <Title editable={{ onChange: setTitle }}>{title}</Title>
+      <Title level={2}>
+        Number of cells in the notebook: {model.cells.length}
+      </Title>
       <Title level={2} editable={{ onChange: setAuthor }}>
         {author}
       </Title>
@@ -54,6 +57,10 @@ const CounterComponent = (): JSX.Element => {
         rows={4}
         style={{ width: '50%' }}
       />
+      <DiffViewer />
+      {/* <UseSignal signal={model.stateChanged}>
+        {(): JSX.Element => <span key="yo">{model.toString()}</span>}
+      </UseSignal> */}
       <Button
         type="primary"
         onClick={e => gatherInfo()}
@@ -61,7 +68,6 @@ const CounterComponent = (): JSX.Element => {
       >
         Export to Markdown
       </Button>
-      <DiffViewer />
     </>
   );
 };
@@ -70,20 +76,25 @@ const CounterComponent = (): JSX.Element => {
  * A Counter Lumino Widget that wraps a CounterComponent.
  */
 export class CounterWidget extends ReactWidget {
-  /**
-   * Constructs a new CounterWidget.
-   */
-  constructor() {
+  /** Data in the current notebook */
+  private _notebook: INotebookModel;
+
+  constructor(notebook: INotebookModel) {
     super();
+    this._notebook = notebook;
     this.addClass('jp-ReactWidget');
   }
 
   // rerender the component every time the command is executed
-  onUpdateRequest(msg: Message): void {
-    ReactDOM.render(<CounterComponent />, this.node);
+  onUpdateRequest(): void {
+    ReactDOM.render(<CounterComponent model={this._notebook} />, this.node);
+  }
+
+  updateModel(model: INotebookModel): void {
+    this._notebook = model;
   }
 
   render(): JSX.Element {
-    return <CounterComponent />;
+    return <CounterComponent model={this._notebook} />;
   }
 }
