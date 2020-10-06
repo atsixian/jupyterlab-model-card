@@ -10,15 +10,14 @@
     "moduleResolution": "node",
     "noEmitOnError": true,
     "noImplicitAny": true,
-    "noUnusedLocals": true,
     "preserveWatchOutput": true,
     "resolveJsonModule": true,
     "outDir": "lib",
-    "rootDir": "src",
+    "rootDir": ".",
     "strict": true,
     "strictNullChecks": false,
     "target": "es2017",
     "types": []
   },
-  "include": ["src/*"]
+  "include": ["src/**/*", "src/**/*.json", "assets/**/*", "assets/**/*.json"]
 }
