@@ -6,14 +6,9 @@ import {
 import { ICommandPalette, WidgetTracker } from '@jupyterlab/apputils';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { ExamplePanel } from './panel';
+import { command } from './constants';
 
-/**
- * The command IDs used by the react-widget plugin.
- */
-namespace CommandIDs {
-  export const create = 'create-model-card';
-}
-
+// TODO Add key binding for the command
 /**
  * Initialization data for the react-widget extension.
  */
@@ -28,16 +23,13 @@ const extension: JupyterFrontEndPlugin<void> = {
     docManager: IDocumentManager
   ) => {
     // Create a new widget
-    const command = CommandIDs.create;
+    // const command = CommandIDs.create;
     let widget: ExamplePanel;
 
     async function createPanel(): Promise<ExamplePanel> {
       if (!widget) {
         widget = new ExamplePanel(app);
         // widget = new MainAreaWidget<CounterWidget>({ content });
-        widget.id = 'model-card';
-        widget.title.label = 'Model Card';
-        widget.title.closable = true;
       }
       if (!tracker.has(widget)) {
         tracker.add(widget);

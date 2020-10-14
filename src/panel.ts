@@ -5,6 +5,7 @@ import { IDisposable, DisposableDelegate } from '@lumino/disposable';
 import { CounterWidget } from './widget';
 import { ToolbarButton } from '@jupyterlab/apputils';
 import { JupyterFrontEnd } from '@jupyterlab/application';
+import { command } from './constants';
 
 export class ExamplePanel extends StackedPanel
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel> {
@@ -30,13 +31,11 @@ export class ExamplePanel extends StackedPanel
     panel: NotebookPanel,
     context: DocumentRegistry.IContext<INotebookModel>
   ): IDisposable {
-    this._view = new CounterWidget(context.model);
-
     const callback = (): void => {
       console.log(context.model.toJSON());
       // !This ensures our view is synced with model data
-      this._view.updateModel(context.model);
-      this._app.commands.execute('create-model-card');
+      this._view.updateModel(context.model, panel.content);
+      this._app.commands.execute(command);
     };
     this._button = new ToolbarButton({
       className: 'myButton',
@@ -45,9 +44,14 @@ export class ExamplePanel extends StackedPanel
       label: 'card'
     });
     this.addWidget(this._button);
-    this.addWidget(this._view);
+    panel.toolbar.insertItem(0, 'model-card', this._button);
 
-    panel.toolbar.insertItem(0, 'runAll', this._button);
+    // create the frontend view after the context is ready
+    context.ready.then(() => {
+      this._view = new CounterWidget(context.model, panel.content);
+      this.addWidget(this._view);
+    });
+
     return new DisposableDelegate(() => {
       this._view.dispose();
       this._button.dispose();
