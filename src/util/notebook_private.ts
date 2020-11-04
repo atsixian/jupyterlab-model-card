@@ -9,7 +9,7 @@ import { Cell } from '@jupyterlab/cells';
  * Ensure that the notebook has proper focus.
  */
 function _ensureFocus(notebook: Notebook, force = false): void {
-  let activeCell = notebook.activeCell;
+  const activeCell = notebook.activeCell;
   if (notebook.mode === 'edit' && activeCell) {
     if (!activeCell.editor.hasFocus()) {
       activeCell.editor.focus();
@@ -36,7 +36,7 @@ function _findCell(notebook: Notebook, node: HTMLElement): number {
   // Then find the corresponding child and select it.
   while (node && node !== notebook.node) {
     if (node.classList.contains(NB_CELL_CLASS)) {
-      let i = ArrayExt.findFirstIndex(
+      const i = ArrayExt.findFirstIndex(
         notebook.widgets,
         widget => widget.node === node
       );
@@ -50,23 +50,6 @@ function _findCell(notebook: Notebook, node: HTMLElement): number {
   return -1;
 }
 
-function _findTargetCell(notebook: Notebook, event: MouseEvent) {
-  let target = event.target as HTMLElement;
-  let index = _findCell(notebook, target);
-  if (index === -1) {
-    // `event.target` sometimes gives an orphaned node in
-    // Firefox 57, which can have `null` anywhere in its parent line. If we fail
-    // to find a cell using `event.target`, try again using a target
-    // reconstructed from the position of the click event.
-    target = document.elementFromPoint(
-      event.clientX,
-      event.clientY
-    ) as HTMLElement;
-    index = _findCell(notebook, target);
-  }
-  return { target: target, index: index };
-}
-
 function scrollToCell(notebook: Notebook, cell: Cell): void {
   // use Phosphor to scroll
   ElementExt.scrollIntoViewIfNeeded(notebook.node, cell.node);
@@ -76,4 +59,18 @@ function scrollToCell(notebook: Notebook, cell: Cell): void {
   cell.activate();
 }
 
-export { _ensureFocus, _findCell, _findTargetCell, scrollToCell };
+const jumpToCell = (notebook: Notebook, idx: number): void => {
+  setTimeout(() => {
+    notebook.deselectAll();
+    notebook.activeCellIndex = idx;
+    _ensureFocus(notebook);
+    notebook.mode = 'edit';
+    scrollToCell(notebook, notebook.activeCell);
+    notebook.activeCell.model.value.insert(
+      notebook.activeCell.model.value.text.length,
+      '<!-- /md-fairness -->\n'
+    );
+  }, 0);
+};
+
+export { _ensureFocus, _findCell, scrollToCell, jumpToCell };

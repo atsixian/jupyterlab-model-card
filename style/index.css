@@ -17,9 +17,5 @@
   color: var(--jp-ui-font-color1);
   background: var(--jp-layout-color1);
   padding: 20px;
-  /* font-size: 48px; */
-  /* display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center; */
+  overflow: scroll;
 }

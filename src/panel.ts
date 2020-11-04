@@ -2,14 +2,14 @@ import { INotebookModel, NotebookPanel } from '@jupyterlab/notebook';
 import { StackedPanel } from '@lumino/widgets';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { IDisposable, DisposableDelegate } from '@lumino/disposable';
-import { CounterWidget } from './widget';
+import { ModelCardWidget } from './components/ModelCardWidget';
 import { ToolbarButton } from '@jupyterlab/apputils';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { command } from './constants';
 
 export class ExamplePanel extends StackedPanel
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel> {
-  private _view: CounterWidget;
+  private _view: ModelCardWidget;
   private _button: ToolbarButton;
   readonly _app: JupyterFrontEnd;
 
@@ -48,7 +48,7 @@ export class ExamplePanel extends StackedPanel
 
     // create the frontend view after the context is ready
     context.ready.then(() => {
-      this._view = new CounterWidget(context.model, panel.content);
+      this._view = new ModelCardWidget(context.model, panel.content);
       this.addWidget(this._view);
     });
 

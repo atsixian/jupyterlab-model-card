@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react';
+import React from 'react';
 import ReactDiffViewer, { DiffMethod } from 'react-diff-viewer';
 
 interface IDiffProps {
@@ -48,6 +48,7 @@ const DiffViewer: React.FC<IDiffProps> = props => (
       const [type, id] = lineId.split('-');
       if (type === 'L') {
         // use the old content
+        // TODO: check immer and abstract this function
         props.setNewLines((lines: string[]) => {
           const temp = lines.map((line, idx) => {
             if (idx === Number(id) - 1) {

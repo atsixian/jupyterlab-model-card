@@ -7,7 +7,7 @@ import 'antd/dist/antd.css';
 import React, { useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import DiffViewer, { constructLines } from './diff';
-import { _ensureFocus, scrollToCell } from './notebook_private';
+import { _ensureFocus, scrollToCell } from './util/notebook_private';
 const { Title } = Typography;
 const { TextArea } = Input;
 
@@ -19,9 +19,13 @@ const { TextArea } = Input;
 
 const mock = {
   modelname: { title: 'Test Model' },
-  authorinfo: { title: 'Author Info', description: 'John Apple' },
+  authorinfo: {
+    title: 'Author Info',
+    description: 'John Apple',
+    cell_ids: [3]
+  },
   dataset: { title: 'Dataset', description: 'Nothing here', links: ['hello'] },
-  references: { title: 'References', links: ["it's me"] },
+  references: { title: 'References', links: ['abc.com'], cell_ids: [1, 2, 3] },
   libraries: { title: 'Libraries Used' }
 };
 
@@ -33,7 +37,7 @@ const _mock = {
     description: 'Write something here',
     links: ['hello from the other side']
   },
-  references: { title: 'References', links: ["it's me"] },
+  references: { title: 'References', links: ['abc.com'], cell_ids: [1, 2, 3] },
   libraries: { title: 'Libraries Used' }
 };
 
@@ -69,40 +73,62 @@ const CounterComponent = ({ model: nb, notebook }: IProps): JSX.Element => {
     );
   };
 
-  const jumpToCell = (): void => {
+  const jumpToCell = (idx: number): void => {
     setTimeout(() => {
       notebook.deselectAll();
-      notebook.activeCellIndex = 1;
+      notebook.activeCellIndex = idx;
       _ensureFocus(notebook);
       notebook.mode = 'edit';
-      scrollToCell(notebook, notebook.widgets[1]);
+      scrollToCell(notebook, notebook.activeCell);
     }, 0);
   };
 
   return (
     <>
-      <Title
-        editable={{
-          icon: null,
-          editing: editable,
-          onChange: setModelName
-        }}
-      >
-        {modelName}
-      </Title>
+      <Title>{modelName}</Title>
       <Title level={2}>
         Number of cells in the notebook: {nb.cells.length}
       </Title>
-      <Title
-        level={2}
-        editable={{
-          icon: null,
-          editing: editable,
-          onChange: setAuthor
+      <Button
+        style={{ padding: 0 }}
+        type="text"
+        onClick={() => {
+          // no cell id info, do nothing
+          if (mock.authorinfo.cell_ids) {
+            jumpToCell(mock.authorinfo.cell_ids[0]);
+          }
         }}
       >
-        {mock.authorinfo.title}: {author}
-      </Title>
+        <Title level={2}>
+          {mock.authorinfo.title}: {mock.authorinfo.description}
+        </Title>
+      </Button>
+      <Button
+        style={{ padding: 0, display: 'block' }}
+        type="text"
+        onClick={() => {
+          // no cell id info, do nothing
+          if (mock.references.cell_ids) {
+            jumpToCell(mock.references.cell_ids[0]);
+          }
+        }}
+      >
+        <Title level={2}>{mock.references.title}</Title>
+      </Button>
+      <p>
+        Related Cells:
+        {mock.references.cell_ids.map((cid, idx) => (
+          <Button
+            type="link"
+            key={idx}
+            onClick={(): void => {
+              jumpToCell(cid);
+            }}
+          >
+            {cid}
+          </Button>
+        ))}
+      </p>
       {/* <Title level={3}>Description</Title>
       <TextArea
         value={description}
@@ -110,21 +136,15 @@ const CounterComponent = ({ model: nb, notebook }: IProps): JSX.Element => {
         rows={4}
         style={{ width: '50%' }}
       /> */}
-      <Switch
+      {/* <Switch
         checkedChildren="View"
         unCheckedChildren="Edit"
         defaultChecked
         onChange={(checked: boolean): void => {
           setEditable(!checked);
         }}
-      />
-      <Button
-        type="primary"
-        onClick={e => jumpToCell()}
-        style={{ display: 'block', marginTop: '20px' }}
-      >
-        Go to cell 1
-      </Button>
+      /> */}
+      <Title level={2}>Merge Demo</Title>
       <DiffViewer
         oldValue={oldContent}
         newValue={newContent}
