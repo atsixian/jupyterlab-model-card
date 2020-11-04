@@ -1,34 +1,35 @@
 import React from 'react';
-import { EditOutlined } from '@ant-design/icons';
+import { EditTwoTone } from '@ant-design/icons';
 import { Notebook } from '@jupyterlab/notebook';
 import { MarkdownCellModel } from '@jupyterlab/cells';
 import { Popconfirm } from 'antd';
 import { jumpToCell } from '../util/notebook_private';
-
+import { AnnotContent } from '../util/mdExtractor';
 export interface IQuickFix {
   sectionName: string;
-  annotMap: Map<string, number>;
+  annotMap: Map<string, AnnotContent>;
   updateAnnotMap: Function;
   notebook: Notebook;
+  idx: number; // index for insertion
+  updateMockData: Function;
 }
 
-// TODO move it to constants
 const annotationContent = (name: string): string =>
-  `<!-- @md-${name} -->
-# ${name}
-<!-- /md-${name} -->`;
+  `# ${name}\n<!-- @md-${name} -->\n<!-- /md-${name} -->`;
 
 const QuickFix: React.FC<IQuickFix> = ({
   sectionName,
   annotMap,
   updateAnnotMap,
-  notebook
+  notebook,
+  idx,
+  updateMockData
 }) => {
   const existed = annotMap.has(sectionName);
   return existed ? (
-    <EditOutlined
+    <EditTwoTone
       onClick={(): void => {
-        jumpToCell(notebook, annotMap.get(sectionName));
+        jumpToCell(notebook, annotMap.get(sectionName).idx);
       }}
     />
   ) : (
@@ -36,7 +37,7 @@ const QuickFix: React.FC<IQuickFix> = ({
       title={`Add a new cell for ${sectionName}?`} // TODO: add user-friendly names for sections
       onConfirm={() => {
         notebook.model.cells.insert(
-          0, // TODO figure out where to insert it
+          idx, // TODO figure out where to insert it
           new MarkdownCellModel({
             cell: {
               cell_type: 'markdown',
@@ -46,13 +47,14 @@ const QuickFix: React.FC<IQuickFix> = ({
           })
         );
         updateAnnotMap(draft => {
-          draft.set(sectionName, 0);
+          draft.set(sectionName, idx);
         });
+        jumpToCell(notebook, idx);
       }}
       okText="Yes"
       cancelText="No"
     >
-      <EditOutlined />
+      <EditTwoTone />
     </Popconfirm>
   );
 };

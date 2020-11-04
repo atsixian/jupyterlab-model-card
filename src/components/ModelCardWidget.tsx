@@ -2,17 +2,14 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import { ReactWidget } from '@jupyterlab/apputils';
 import { INotebookModel, Notebook } from '@jupyterlab/notebook';
-import { Button, Input, Switch, Typography } from 'antd';
+import { Button, Input, Typography } from 'antd';
 import 'antd/dist/antd.css';
 import { enableMapSet } from 'immer';
-import { times } from 'lodash';
-import randomWords from 'random-words';
 import React, { useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import { useImmer } from 'use-immer';
+import { getAnnotMap, AnnotContent, AnnotMap } from '../util/mdExtractor';
 import QuickFix, { IQuickFix } from './QuickFix';
-import { scrollToCell, _ensureFocus } from '../util/notebook_private';
-import { getAnnotMap } from '../util/mdExtractor';
 const { Title } = Typography;
 const { TextArea } = Input;
 
@@ -53,20 +50,10 @@ export const mockData = {
   }
 };
 
-function getRandomInt(min: number, max: number): number {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-const getRandomParagraph = () =>
-  times(3, () => randomWords(5).join(', ')).join('\n');
-
-// TODO: different functionality for each field. e.g. links for cell_ids
-
 interface ISectionProps {
   mockData: any;
   notebook: Notebook;
+  annotMap: Map<string, AnnotContent>;
 }
 
 interface ISectionContent {
@@ -99,19 +86,30 @@ const SectionContent = ({
     )
   );
 
-const Section = ({ mockData, notebook }: ISectionProps): JSX.Element => {
-  const [annotMap, updateAnnotMap] = useImmer(new Map<string, number>());
+const Section = ({
+  mockData,
+  notebook,
+  annotMap: amap
+}: ISectionProps): JSX.Element => {
+  const [annotMap, updateAnnotMap] = useImmer(amap);
+  const [data, updateData] = useImmer(mockData);
 
   useEffect(() => {
-    updateAnnotMap(() => getAnnotMap(notebook)); // get existing annotations
-  }, [notebook]);
+    console.log('updated map', amap);
+    updateAnnotMap(() => amap);
+    updateData(draft => {
+      amap.forEach((value, key) => {
+        if (key in data) {
+          draft[key]['description'] = value.content;
+        }
+      });
+    });
+  }, [amap]);
 
-  const [oldData, setOldData] = useState(mockData);
-  const [data, setData] = useState(mockData);
-  const [editable, setEditable] = useState(true);
   return (
     <>
       <Button
+        type="primary"
         onClick={() => {
           getAnnotMap(notebook);
         }}
@@ -128,6 +126,8 @@ const Section = ({ mockData, notebook }: ISectionProps): JSX.Element => {
               annotMap={annotMap}
               updateAnnotMap={updateAnnotMap}
               notebook={notebook}
+              idx={1}
+              updateMockData={updateData}
             />
           )
         })
@@ -138,30 +138,40 @@ const Section = ({ mockData, notebook }: ISectionProps): JSX.Element => {
 
 export class ModelCardWidget extends ReactWidget {
   /** Data in the current notebook */
-  private _model: INotebookModel;
   private _notebook: Notebook;
+  private _annotMap: AnnotMap;
 
-  constructor(model: INotebookModel, notebook: Notebook) {
+  constructor(notebook: Notebook, annotMap: AnnotMap) {
     super();
-    this._model = model;
     this._notebook = notebook;
+    this._annotMap = annotMap;
     this.addClass('jp-ReactWidget');
   }
 
   // rerender the component every time the command is executed
   onUpdateRequest(): void {
     ReactDOM.render(
-      <Section mockData={mockData} notebook={this._notebook} />,
+      <Section
+        mockData={mockData}
+        notebook={this._notebook}
+        annotMap={this._annotMap}
+      />,
       this.node
     );
   }
 
-  updateModel(model: INotebookModel, notebook: Notebook): void {
-    this._model = model;
+  updateModel(notebook: Notebook, annotMap: AnnotMap): void {
     this._notebook = notebook;
+    this._annotMap = annotMap;
   }
 
   render(): JSX.Element {
-    return <Section mockData={mockData} notebook={this._notebook} />;
+    return (
+      <Section
+        mockData={mockData}
+        notebook={this._notebook}
+        annotMap={this._annotMap}
+      />
+    );
   }
 }

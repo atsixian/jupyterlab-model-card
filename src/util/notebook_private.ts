@@ -66,10 +66,10 @@ const jumpToCell = (notebook: Notebook, idx: number): void => {
     _ensureFocus(notebook);
     notebook.mode = 'edit';
     scrollToCell(notebook, notebook.activeCell);
-    notebook.activeCell.model.value.insert(
-      notebook.activeCell.model.value.text.length,
-      '<!-- /md-fairness -->\n'
-    );
+    // notebook.activeCell.model.value.insert(
+    //   notebook.activeCell.model.value.text.length,
+    //   '<!-- /md-fairness -->\n'
+    // );
   }, 0);
 };
 
