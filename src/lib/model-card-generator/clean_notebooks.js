@@ -1,7 +1,7 @@
 "use strict";
 exports.__esModule = true;
 
-var py = require("../lib/python-program-analysis/dist/es5");
+var py = require("@andrewhead/python-program-analysis");
 var fs = require('fs');
 var child = require('child_process');
 
