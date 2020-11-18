@@ -7,6 +7,8 @@ import { ToolbarButton } from '@jupyterlab/apputils';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { command } from './constants';
 import { getAnnotMap } from './util/mdExtractor';
+import { generateJson } from './lib/model-card-generator/main.js';
+import { parse } from '@andrewhead/python-program-analysis';
 
 export class ExamplePanel extends StackedPanel
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel> {
