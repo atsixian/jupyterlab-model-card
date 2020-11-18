@@ -8,6 +8,7 @@ import { enableMapSet } from 'immer';
 import React, { useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import { useImmer } from 'use-immer';
+import { generateModelCard } from '../lib/model-card-generator/main';
 import { getAnnotMap, AnnotContent, AnnotMap } from '../util/mdExtractor';
 import QuickFix, { IQuickFix } from './QuickFix';
 const { Title } = Typography;
@@ -93,6 +94,7 @@ const Section = ({
 }: ISectionProps): JSX.Element => {
   const [annotMap, updateAnnotMap] = useImmer(amap);
   const [data, updateData] = useImmer(mockData);
+  generateModelCard(notebook.model.toJSON());
 
   useEffect(() => {
     console.log('updated map', amap);

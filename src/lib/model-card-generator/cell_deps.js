@@ -3,7 +3,7 @@ var utils = require("./cell_utils.js");
 
 var py = require("@andrewhead/python-program-analysis");
 
-function printDependencies(cells, printMode, dict, name, res_color_map, sources, sinks, cell_counts){
+function printDependencies(cells, printMode, dict, res_color_map, sources, sinks, cell_counts){
 
     let res = "";
     var dep_count = 0;
@@ -34,25 +34,25 @@ function printDependencies(cells, printMode, dict, name, res_color_map, sources,
     // }
     // res += cfg_count;
 
-    var new_name = name.split('/');
-    new_name = new_name[new_name.length - 1].split(".ipynb")[0];
-    console.log("NEW NAME ", new_name);
+    // var new_name = name.split('/');
+    // new_name = new_name[new_name.length - 1].split(".ipynb")[0];
+    // console.log("NEW NAME ", new_name);
 
 
 
-    fs.writeFile(__dirname + "/../assets/" + new_name + '_deps_and_labels_new.txt', res, function (err) {
-      if (err) throw err;
-      //console.log((new_name + '_deps_and_labels_new.txt') + ' saved!\n');
+    // fs.writeFile(__dirname + "/../assets/" + new_name + '_deps_and_labels_new.txt', res, function (err) {
+    //   if (err) throw err;
+    //   //console.log((new_name + '_deps_and_labels_new.txt') + ' saved!\n');
 
-    });
+    // });
 }
 
 
 
 module.exports = {
-    calculateCells: function(name, printMode){
-        const programSrc = fs.readFileSync(name).toString();
-        const programJson = JSON.parse(programSrc);
+    calculateCells: function(content, printMode){
+        // const programSrc = fs.readFileSync(name).toString();
+        const programJson = JSON.parse(content);
         
         //dict is a dictionary pointing from execution_count to the corresponding cell 
         let dict = new Object();
@@ -790,7 +790,7 @@ module.exports = {
 
         // console.log('leave cfg!!!');
 
-        flows = utils.getDefUse(notebookCode);
+        const flows = utils.getDefUse(notebookCode);
 
         // var new_name = '.' + name.split('.')[1];
         // fs.writeFile((new_name + '_no_comments.py'), notebookCode, function (err) {
@@ -912,14 +912,15 @@ module.exports = {
     
 
         //console.log("These are all of the cell dependency relations in the notebook");
-        printDependencies(cells, printMode, dict, name, res_color_map, sources, sinks, cell_counts);
+        printDependencies(cells, printMode, dict, res_color_map, sources, sinks, cell_counts);
 
 
     },
 
-    printLabels: function(name) {
-        const programSrc = fs.readFileSync(name).toString();
-        const programJson = JSON.parse(programSrc);
+    printLabels: function(content) {
+        // const programSrc = fs.readFileSync(name).toString();
+        // const programJson = JSON.parse(content);
+        const programJson = content;
 
         //dict is a dictionary pointing from execution_count to the corresponding cell
         let dict = new Object();
@@ -1601,7 +1602,7 @@ module.exports = {
             }
         }
 
-        flows = utils.getDefUse(notebookCode);
+        const flows = utils.getDefUse(notebookCode);
 
         for (let flow of flows.items) {
             if((py.printNode(flow.toNode) != undefined) &&(py.printNode(flow.toNode)).includes('.fit')){

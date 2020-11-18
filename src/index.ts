@@ -5,7 +5,7 @@ import {
 } from '@jupyterlab/application';
 import { ICommandPalette, WidgetTracker } from '@jupyterlab/apputils';
 import { IDocumentManager } from '@jupyterlab/docmanager';
-import { ExamplePanel } from './panel';
+import { ExamplePanel as ModelCardPanel } from './panel';
 import { command } from './constants';
 
 // TODO Add key binding for the command
@@ -24,11 +24,11 @@ const extension: JupyterFrontEndPlugin<void> = {
   ) => {
     // Create a new widget
     // const command = CommandIDs.create;
-    let widget: ExamplePanel;
+    let widget: ModelCardPanel;
 
-    async function createPanel(): Promise<ExamplePanel> {
+    async function createPanel(): Promise<ModelCardPanel> {
       if (!widget) {
-        widget = new ExamplePanel(app);
+        widget = new ModelCardPanel(app); // add docManager here
         // widget = new MainAreaWidget<CounterWidget>({ content });
       }
       if (!tracker.has(widget)) {
@@ -53,7 +53,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     palette.addItem({ command, category: 'Test' });
 
-    const tracker = new WidgetTracker<ExamplePanel>({
+    const tracker = new WidgetTracker<ModelCardPanel>({
       namespace: 'model-card'
     });
 

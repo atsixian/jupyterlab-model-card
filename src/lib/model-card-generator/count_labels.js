@@ -4,9 +4,9 @@ var py = require("@andrewhead/python-program-analysis");
 
 
 module.exports = {
-    calculateCells: function(name){
-        const programSrc = fs.readFileSync(name).toString();
-        const programJson = JSON.parse(programSrc);
+    calculateCells: function(content){
+        // const programSrc = fs.readFileSync(name).toString();
+        const programJson = JSON.parse(content);
 
         let cell_count = 0;
 

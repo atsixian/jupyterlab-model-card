@@ -7,8 +7,6 @@ import { ToolbarButton } from '@jupyterlab/apputils';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { command } from './constants';
 import { getAnnotMap } from './util/mdExtractor';
-import { generateJson } from './lib/model-card-generator/main.js';
-import { parse } from '@andrewhead/python-program-analysis';
 
 export class ExamplePanel extends StackedPanel
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel> {
@@ -35,7 +33,7 @@ export class ExamplePanel extends StackedPanel
     context: DocumentRegistry.IContext<INotebookModel>
   ): IDisposable {
     const callback = (): void => {
-      console.log(context.model.toJSON());
+      // console.log(context.model.toJSON());
       // !This ensures our view is synced with model data
       this._view.updateModel(panel.content, getAnnotMap(panel.content));
       this._app.commands.execute(command);

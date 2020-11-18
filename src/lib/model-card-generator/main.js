@@ -1,5 +1,5 @@
 "use strict";
-exports.__esModule = true;
+// exports.__esModule = true;
 
 
 /**
@@ -11,15 +11,14 @@ exports.__esModule = true;
 
 var py = require("@andrewhead/python-program-analysis");
 var graphing = require("./Graph.js").Graph;
-var fs = require('fs');
-var path = require('path');
+// var fs = require('fs');
+// var path = require('path');
 var ic = require("./infocell");
-var child = require('child_process');
 var dep = require("./cell_deps.js");
 
 
-var args = process.argv.slice(2);
-var filePath = args[0];
+// var args = process.argv.slice(2);
+// var filePath = args[0];
 var countLines = 0;
 
 
@@ -68,7 +67,7 @@ function createCell(text, executionCount, output) {
     return new ic.InfoCell(text, executionCount, output);
 }
 
-function convertColorToLabel(filePath) {
+function convertColorToLabel(content) {
     // data collection -> red
     // data cleaning -> yellow
     // data labeling -> green
@@ -77,7 +76,7 @@ function convertColorToLabel(filePath) {
     // evaluation -> orange
     // model deployment -> pink
 
-    var color_map = dep.printLabels(filePath);
+    var color_map = dep.printLabels(content);
 
     //var colourFile = fs.readFileSync(path.resolve(__dirname, filePath.split(".ipynb")[0] + "_deps_and_labels_new.txt"), "utf8");
     var mapObj = {red:"Data collection",yellow:"Data cleaning",
@@ -89,11 +88,11 @@ function convertColorToLabel(filePath) {
         return mapObj[matched];
     });
 
-    fs.writeFile((__dirname + "/../assets/" + filePath.split(".ipynb")[0] + '_labels.txt'), color_map,
-        function (err) {
-            if (err) throw err;
-            console.log('Labels file saved!');
-        });
+    // fs.writeFile((__dirname + "/../assets/" + filePath.split(".ipynb")[0] + '_labels.txt'), color_map,
+    //     function (err) {
+    //         if (err) throw err;
+    //         console.log('Labels file saved!');
+    //     });
 
     color_map = color_map.split("\n");
     var new_color_map = {};
@@ -106,11 +105,11 @@ function convertColorToLabel(filePath) {
     return new_color_map;
 }
 
-
-function readCells(filePath, new_color_map, markdown_contents) {
+function readCells(content, new_color_map) {
     // ## Section  in Markdown
-    var contents = fs.readFileSync(path.resolve(__dirname, filePath));
-    let jsondata = JSON.parse(contents);
+    // var contents = fs.readFileSync(path.resolve(__dirname, filePath));
+    // let jsondata = JSON.parse(content);
+    let jsondata = content;
     var notebookCode = "\n";
     var notebookMarkdown = "\n";
     const rewriter = new py.MagicsRewriter();
@@ -118,9 +117,11 @@ function readCells(filePath, new_color_map, markdown_contents) {
     let id_count = -1;
     let flag = true;
     let programbuilder = new py.ProgramBuilder();
-    model_card.JSONSchema["modelname"]["Filename"] = filePath.split("/").slice(-1).toString();
-    console.log();
-    fs.mkdirSync("../example/" + model_card.JSONSchema["modelname"]["Filename"], { recursive: true })
+    // model_card.JSONSchema["modelname"]["Filename"] = filePath.split("/").slice(-1).toString();
+    // TODO get name for the file with docManager
+    model_card.JSONSchema["modelname"]["Filename"] = "hello";
+    // console.log();
+    // fs.mkdirSync("../example/" + model_card.JSONSchema["modelname"]["Filename"], { recursive: true })
 
     for (let cell of jsondata['cells']) {
         let sourceCode = "";
@@ -159,6 +160,7 @@ function readCells(filePath, new_color_map, markdown_contents) {
             for (let line of cell['source']) {
                 if (line[0] === "%") {
                     line = rewriter.rewriteLineMagic(line);
+                    line = '#' + line;
                 }
                 countLines += 1;
                 model_card.JSONSchema[currStage]["lineNumbers"].push(countLines);
@@ -173,14 +175,14 @@ function readCells(filePath, new_color_map, markdown_contents) {
                     //model_card.outputs[code_cell.persistentId] += output;
                     if (cell["outputs"][output]['output_type'] == 'display_data') {
                         var bitmap = new Buffer.from(cell["outputs"][output]['data']['image/png'], 'base64');
-                        fs.writeFileSync(__dirname + "/../example/" + model_card.JSONSchema["modelname"]["Filename"] + "/" + code_cell.persistentId + ".jpg", bitmap);
-                        var image = "![Hello World](data:image/png;base64," + cell["outputs"][output]['data']['image/png'];
+                        // TODO figure out how to embed images in notebook
+                        // fs.writeFileSync(__dirname + "/../example/" + model_card.JSONSchema["modelname"]["Filename"] + "/" + code_cell.persistentId + ".jpg", bitmap);
+                        // var image = "![Hello World](data:image/png;base64," + cell["outputs"][output]['data']['image/png'];
                         //console.log(model_card.JSONSchema);
                         model_card.JSONSchema[currStage]["figures"].push(code_cell.persistentId + ".jpg");
                     }
                 }
             }
-
             programbuilder.add(code_cell)
             model_card.JSONSchema[currStage]["cells"] += code_cell;
             //console.log(code_cell);
@@ -192,7 +194,8 @@ function readCells(filePath, new_color_map, markdown_contents) {
     // id_count = persistentId
     //let code = programbuilder.buildTo("id" + id_count.toString()).text;
     model_card.JSONSchema["markdown"] = notebookMarkdown;
-    return [notebookCode, notebookMarkdown, model_card];
+    // return [notebookCode, notebookMarkdown, model_card];
+    return model_card.JSONSchema;
 }
 
 
@@ -265,7 +268,7 @@ function findImportScope(importScope, lineToCode, numgraph, model_card, markdown
 }
 
 function generateLibraryInfo(imports, markdown_contents) {
-    let library_defs = JSON.parse(fs.readFileSync(__dirname + "/../assets/library_defs.json"));
+    // let library_defs = JSON.parse(fs.readFileSync(__dirname + "/../assets/library_defs.json"));
     //console.log("## Libraries Used ##");
     markdown_contents += "## Libraries Used ##" + "\n";
     var libraries = {"pandas":[], "numpy":[], "matplotlib":[], "sklearn":[], "tensorflow":[], "pytorch":[], "OTHER":[]};
@@ -301,21 +304,6 @@ function generateLibraryInfo(imports, markdown_contents) {
         }
     }
 
-}
-
-function printCellsOfStage(stage_name, model_card) {
-    for (let cell in model_card.JSONSchema[stage_name]["cells"]) {
-        console.log(ic.printInfoCell(cell));
-    }
-}
-
-function getOutput() {
-    // look at "output_type" of json"
-    var hello = new InfoCell(text, executionCount, executionEventId);
-}
-
-function printModelCard(model_card) {
-    console.log(JSON.stringify(model_card.JSONSchema));
 }
 
 
@@ -367,33 +355,21 @@ function generateMarkdown(model_card, notebookCode, markdown_contents) {
 
     }
     //console.log(markdown_contents);
-    fs.writeFile('ModelCard.md', markdown_contents, (err) => {
-        if (err) throw err;
-        console.log('Model card saved');
-        //console.log(model_card);
-    });
+    // fs.writeFile('ModelCard.md', markdown_contents, (err) => {
+    //     if (err) throw err;
+    //     console.log('Model card saved');
+    //     //console.log(model_card);
+    // });
 
 }
 
+/**
+ * Generate model card contents in an object
+ */
+export function generateModelCard(content) {
 
-export function generateJson() {
-    //generateModelName(notebookMarkdown);
-    //generateMarkdown(model_card);
-
-    var markdown_contents = "";
-    var new_color = convertColorToLabel(filePath);
-    var res = readCells(filePath, new_color);
-    var notebookCode = res[0];
-    var notebookMarkdown = res[1];
-    var MC = res[2];
-
-    generateMarkdown(MC, notebookCode, markdown_contents);
-
-    //printModelCard(model_card);
-    //Stage("datacleaning", model_card);
-
-    //printCellsOfStage("preprocessing", model_card);
-    //printCellsOfStage("modeltraining", model_card);
-    //printCellsOfStage("modelevaluation", model_card);
+    var new_color = convertColorToLabel(content);
+    const res = readCells(content, new_color);
+    console.log(res);
 
 }
