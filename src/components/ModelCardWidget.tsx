@@ -93,20 +93,29 @@ const Section = ({
   annotMap: amap
 }: ISectionProps): JSX.Element => {
   const [annotMap, updateAnnotMap] = useImmer(amap);
-  const [data, updateData] = useImmer(mockData);
-  generateModelCard(notebook.model.toJSON());
+  const [data, updateData] = useState({});
 
   useEffect(() => {
     console.log('updated map', amap);
     updateAnnotMap(() => amap);
-    updateData(draft => {
-      amap.forEach((value, key) => {
-        if (key in data) {
-          draft[key]['description'] = value.content;
-        }
-      });
+    const modelCard: any = generateModelCard(notebook.model.toJSON());
+
+    amap.forEach((value, key) => {
+      if (key in data) {
+        modelCard[key]['description'] = value.content;
+      }
     });
-  }, [amap]);
+    console.log(modelCard);
+    updateData(modelCard);
+    // updateData(draft => {
+    //   // get availble annotations
+    //   amap.forEach((value, key) => {
+    //     if (key in data) {
+    //       draft[key]['description'] = value.content;
+    //     }
+    //   });
+    // });
+  }, [amap, notebook]);
 
   return (
     <>

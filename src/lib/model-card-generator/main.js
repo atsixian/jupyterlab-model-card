@@ -9,7 +9,7 @@
 
 // COMMAND: node main.js ../assets/News_Categorization_MNB.ipynb
 
-var py = require("@andrewhead/python-program-analysis");
+var py = require("modified-python-program-analysis/dist/es5");
 var graphing = require("./Graph.js").Graph;
 // var fs = require('fs');
 // var path = require('path');
@@ -60,7 +60,6 @@ class ModelCard {
         return this.JSONSchema["modelevaluation"]["lineNumbers"];
     }
 }
-var model_card = new ModelCard();
 
 
 function createCell(text, executionCount, output) {
@@ -109,6 +108,7 @@ function readCells(content, new_color_map) {
     // ## Section  in Markdown
     // var contents = fs.readFileSync(path.resolve(__dirname, filePath));
     // let jsondata = JSON.parse(content);
+    const model_card = new ModelCard();
     let jsondata = content;
     var notebookCode = "\n";
     var notebookMarkdown = "\n";
@@ -367,9 +367,9 @@ function generateMarkdown(model_card, notebookCode, markdown_contents) {
  * Generate model card contents in an object
  */
 export function generateModelCard(content) {
-
+    debugger
     var new_color = convertColorToLabel(content);
+    console.log(new_color)
     const res = readCells(content, new_color);
-    console.log(res);
-
+    return res;
 }

@@ -1,7 +1,7 @@
 var fs = require('fs');
 var utils = require("./cell_utils.js");
 
-var py = require("@andrewhead/python-program-analysis");
+var py = require("modified-python-program-analysis/dist/es5");
 
 function printDependencies(cells, printMode, dict, res_color_map, sources, sinks, cell_counts){
 
@@ -921,7 +921,6 @@ module.exports = {
         // const programSrc = fs.readFileSync(name).toString();
         // const programJson = JSON.parse(content);
         const programJson = content;
-
         //dict is a dictionary pointing from execution_count to the corresponding cell
         let dict = new Object();
         let cells = [];
@@ -966,7 +965,9 @@ module.exports = {
             if (cell.cell_type === 'code'){
                 cell_counts.push(cell.execution_count);
                 var sourceCode = "";
-                for(let line of cell.source){
+                const cells = cell.source.split("\n");
+                for(let line of cells){
+                    line += "\n"
                     if(!((line[0] == '%') || (line[0] == '!'))){
                         sourceCode += line;
                     }

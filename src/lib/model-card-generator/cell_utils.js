@@ -1,4 +1,4 @@
-var py = require("@andrewhead/python-program-analysis");
+var py = require("modified-python-program-analysis/dist/es5");
 
 module.exports = {
     getSourceFromCell: function(cell){

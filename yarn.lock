@@ -2,13 +2,6 @@
 # yarn lockfile v1
 
 
-"@andrewhead/python-program-analysis@^0.4.8":
-  version "0.4.8"
-  resolved "https://registry.yarnpkg.com/@andrewhead/python-program-analysis/-/python-program-analysis-0.4.8.tgz#cb49514b5572a47633cf1c2117236568a0269bea"
-  integrity sha512-Ga0tahUMNRWi9g6fXA4be+b38uX98lDWHi8KmJFtEePrdX/bsxgwhkX67E9dIUPpXxp1NifajYMdVzWsD18lvw==
-  dependencies:
-    lodash "^4.17.15"
-
 "@ant-design/colors@^3.1.0":
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/@ant-design/colors/-/colors-3.2.2.tgz#5ad43d619e911f3488ebac303d606e66a8423903"
@@ -2535,6 +2528,11 @@ mocha@^7.1.1:
     yargs "13.3.2"
     yargs-parser "13.1.2"
     yargs-unparser "1.6.0"
+
+modified-python-program-analysis@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/modified-python-program-analysis/-/modified-python-program-analysis-1.0.0.tgz#1f05fffd709d8d6ef8dadcd8acd161d867617645"
+  integrity sha512-6CGVbhVUQcGf9kX+Ge3K0/ITbCaAmdYmYzQjzqGiPlFmRdKvcE/dNQeU1fJ4r/rU7kLEwKdwjvx0S1IeNQ4WYA==
 
 moment@^2.24.0:
   version "2.28.0"
