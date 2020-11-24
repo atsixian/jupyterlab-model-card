@@ -2,9 +2,11 @@
 
 ![Github Actions Status](https://github.com/Deerhound579/jupyterlab-ext-tut/workflows/Build/badge.svg)
 
-random pic
+To push to Grace branch:
+Run ```git branch -a``` to make sure you're on the right branch "grace".
 
-Grace and Sixian 2020
+Run ```git push -u origin grace``` to push to origin/grace branch"
+
 
 
 ## Requirements
