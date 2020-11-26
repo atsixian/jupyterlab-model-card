@@ -10,6 +10,7 @@ import * as ReactDOM from 'react-dom';
 import { useImmer } from 'use-immer';
 import { generateModelCard } from '../lib/model-card-generator/main';
 import { getAnnotMap, AnnotContent, AnnotMap } from '../util/mdExtractor';
+import { jumpToCell } from '../util/notebook_private';
 import QuickFix, { IQuickFix } from './QuickFix';
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -52,51 +53,76 @@ export const mockData = {
 };
 
 interface ISectionProps {
-  mockData: any;
   notebook: Notebook;
   annotMap: Map<string, AnnotContent>;
 }
 
 interface ISectionContent {
   sectionName: string;
+  notebook: Notebook;
   sectionContent: any;
   quickFix: React.FC<IQuickFix>;
 }
 
+const ignoreFields = new Set([
+  // 'cell_ids',
+  'lineNumbers',
+  'markdown',
+  'source',
+  'misc',
+  'cells'
+]);
+
 const SectionContent = ({
   sectionName,
+  notebook,
   sectionContent,
   quickFix
 }): JSX.Element[] =>
-  Object.entries(sectionContent).map(([k, v]: [string, any], idx) =>
-    k === 'title' ? (
-      <h1 key={idx}>
-        {v} {quickFix}
-      </h1>
-    ) : (
-      <React.Fragment key={idx}>
-        {v.length === 0 ? (
-          ''
-        ) : (
-          <>
-            <h2>{k}</h2>
-            <p>{v}</p>
-          </>
-        )}
-      </React.Fragment>
-    )
-  );
+  typeof sectionContent !== 'object'
+    ? null
+    : Object.entries(sectionContent).map(([k, v]: [string, any], idx) => {
+        if (ignoreFields.has(k)) {
+          return null;
+        }
+        if (k === 'title') {
+          return (
+            <h1 key={idx}>
+              {v} {quickFix}
+            </h1>
+          );
+        } else if (k === 'cell_ids') {
+          return v.map((cid: number, idx: number) => (
+            <Button key={idx} onClick={() => jumpToCell(notebook, cid)}>
+              {cid}
+            </Button>
+          ));
+        } else if (k === 'figures') {
+          return v.map((src: string, idx: number) => (
+            <img key={idx} src={`data:image/png;base64,${src}`} />
+          ));
+        } else {
+          return (
+            <React.Fragment key={idx}>
+              {v.length === 0 ? (
+                ''
+              ) : (
+                <>
+                  <h2>{k}</h2>
+                  <p>{v}</p>
+                </>
+              )}
+            </React.Fragment>
+          );
+        }
+      });
 
-const Section = ({
-  mockData,
-  notebook,
-  annotMap: amap
-}: ISectionProps): JSX.Element => {
+const Section = ({ notebook, annotMap: amap }: ISectionProps): JSX.Element => {
   const [annotMap, updateAnnotMap] = useImmer(amap);
   const [data, updateData] = useState({});
 
   useEffect(() => {
-    console.log('updated map', amap);
+    // console.log('updated map', amap);
     updateAnnotMap(() => amap);
     const modelCard: any = generateModelCard(notebook.model.toJSON());
 
@@ -107,14 +133,6 @@ const Section = ({
     });
     console.log(modelCard);
     updateData(modelCard);
-    // updateData(draft => {
-    //   // get availble annotations
-    //   amap.forEach((value, key) => {
-    //     if (key in data) {
-    //       draft[key]['description'] = value.content;
-    //     }
-    //   });
-    // });
   }, [amap, notebook]);
 
   return (
@@ -130,6 +148,7 @@ const Section = ({
       {Object.entries(data).map(([sectionName, sectionContent]) =>
         SectionContent({
           sectionName,
+          notebook,
           sectionContent,
           quickFix: (
             <QuickFix
@@ -137,7 +156,7 @@ const Section = ({
               annotMap={annotMap}
               updateAnnotMap={updateAnnotMap}
               notebook={notebook}
-              idx={1}
+              idx={1} // TODO find the right index
               updateMockData={updateData}
             />
           )
@@ -162,11 +181,7 @@ export class ModelCardWidget extends ReactWidget {
   // rerender the component every time the command is executed
   onUpdateRequest(): void {
     ReactDOM.render(
-      <Section
-        mockData={mockData}
-        notebook={this._notebook}
-        annotMap={this._annotMap}
-      />,
+      <Section notebook={this._notebook} annotMap={this._annotMap} />,
       this.node
     );
   }
@@ -177,12 +192,6 @@ export class ModelCardWidget extends ReactWidget {
   }
 
   render(): JSX.Element {
-    return (
-      <Section
-        mockData={mockData}
-        notebook={this._notebook}
-        annotMap={this._annotMap}
-      />
-    );
+    return <Section notebook={this._notebook} annotMap={this._annotMap} />;
   }
 }

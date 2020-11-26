@@ -174,21 +174,17 @@ function readCells(content, new_color_map) {
                 for (let output in cell["outputs"]) {
                     //model_card.outputs[code_cell.persistentId] += output;
                     if (cell["outputs"][output]['output_type'] == 'display_data') {
-                        var bitmap = new Buffer.from(cell["outputs"][output]['data']['image/png'], 'base64');
-                        // TODO figure out how to embed images in notebook
-                        // fs.writeFileSync(__dirname + "/../example/" + model_card.JSONSchema["modelname"]["Filename"] + "/" + code_cell.persistentId + ".jpg", bitmap);
-                        // var image = "![Hello World](data:image/png;base64," + cell["outputs"][output]['data']['image/png'];
-                        //console.log(model_card.JSONSchema);
-                        model_card.JSONSchema[currStage]["figures"].push(code_cell.persistentId + ".jpg");
+                        // model_card.JSONSchema[currStage]["figures"].push(code_cell.persistentId + ".jpg");
+                        model_card.JSONSchema[currStage]["figures"].push(cell["outputs"][output]['data']['image/png']);
                     }
                 }
             }
             programbuilder.add(code_cell)
-            model_card.JSONSchema[currStage]["cells"] += code_cell;
+            model_card.JSONSchema[currStage]["cells"] += JSON.stringify(code_cell.text, null, 2);
             //console.log(code_cell);
             //console.log(model_card.JSONSchema[currStage]["cells"]);
             model_card.JSONSchema[currStage]["source"] += sourceCode;
-            model_card.JSONSchema[currStage]["cell_ids"].push(code_cell.persistentId);
+            model_card.JSONSchema[currStage]["cell_ids"].push(id_count);
         }
     }
     // id_count = persistentId
@@ -367,9 +363,7 @@ function generateMarkdown(model_card, notebookCode, markdown_contents) {
  * Generate model card contents in an object
  */
 export function generateModelCard(content) {
-    debugger
     var new_color = convertColorToLabel(content);
-    console.log(new_color)
     const res = readCells(content, new_color);
     return res;
 }

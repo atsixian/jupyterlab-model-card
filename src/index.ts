@@ -5,8 +5,9 @@ import {
 } from '@jupyterlab/application';
 import { ICommandPalette, WidgetTracker } from '@jupyterlab/apputils';
 import { IDocumentManager } from '@jupyterlab/docmanager';
-import { ExamplePanel as ModelCardPanel } from './panel';
+import { INotebookTracker } from '@jupyterlab/notebook';
 import { command } from './constants';
+import { ExamplePanel as ModelCardPanel } from './panel';
 
 // TODO Add key binding for the command
 /**
@@ -15,12 +16,18 @@ import { command } from './constants';
 const extension: JupyterFrontEndPlugin<void> = {
   id: 'model-card',
   autoStart: true,
-  requires: [ICommandPalette, ILayoutRestorer, IDocumentManager],
+  requires: [
+    ICommandPalette,
+    ILayoutRestorer,
+    IDocumentManager,
+    INotebookTracker
+  ],
   activate: (
     app: JupyterFrontEnd,
     palette: ICommandPalette,
     restorer: ILayoutRestorer,
-    docManager: IDocumentManager
+    docManager: IDocumentManager,
+    notebookTracker: INotebookTracker
   ) => {
     // Create a new widget
     // const command = CommandIDs.create;
@@ -36,12 +43,12 @@ const extension: JupyterFrontEndPlugin<void> = {
       }
       if (!widget.isAttached) {
         app.shell.add(widget, 'main');
+        app.shell.activateById(widget.id);
+        app.docRegistry.addWidgetExtension('Notebook', widget);
       }
 
       // Refresh the content
       widget.update();
-      app.shell.activateById(widget.id);
-      app.docRegistry.addWidgetExtension('Notebook', widget);
       return widget;
     }
 
@@ -51,7 +58,7 @@ const extension: JupyterFrontEndPlugin<void> = {
       execute: createPanel
     });
 
-    palette.addItem({ command, category: 'Test' });
+    palette.addItem({ command, category: 'Model Card' });
 
     const tracker = new WidgetTracker<ModelCardPanel>({
       namespace: 'model-card'
