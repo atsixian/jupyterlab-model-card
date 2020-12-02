@@ -8,17 +8,16 @@ import { enableMapSet } from 'immer';
 import React, { useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import { useImmer } from 'use-immer';
+import { stages } from '../constants';
 import { generateModelCard } from '../lib/model-card-generator/main';
 import { getAnnotMap, AnnotContent, AnnotMap } from '../util/mdExtractor';
 import { jumpToCell } from '../util/notebook_private';
-import QuickFix, { IQuickFix } from './QuickFix';
+import QuickFix from './QuickFix';
 const { Title } = Typography;
 const { TextArea } = Input;
 
 // TODO only pass the notebook, get model from that?
 // TODO seprate state for each section?
-// TODO we don't want to run the extension automatically when we switch notebook.
-// Possible solution: clear the old data, so no diffs will be generated
 // TODO handle empty state when notebook is closed
 enableMapSet();
 
@@ -27,58 +26,43 @@ interface IProps {
   notebook: Notebook;
 }
 
-export const mockData = {
-  modelname: {
-    title: 'Test Model',
-    fileName: 'hello world',
-    cell_ids: [1, 2, 3]
-  },
-  author: { title: 'Author', description: '' },
-  dataset: { title: 'Dataset', description: 'dataset desc', links: [''] },
-  references: { title: 'References', links: [''], cell_ids: [1, 2, 3] },
-  libraries: { title: 'Libraries Used', libs: [''] },
-  misc: {
-    title: 'Miscellaneous',
-    cell_ids: [2, 2, 3],
-    cells: [1],
-    lineNumbers: [123],
-    source: 'this is a source',
-    markdown: '',
-    imports: [''],
-    functions: '',
-    figures: [''],
-    description: '',
-    outputs: ['']
-  }
-};
-
 interface ISectionProps {
   notebook: Notebook;
   annotMap: Map<string, AnnotContent>;
 }
 
 interface ISectionContent {
-  sectionName: string;
   notebook: Notebook;
   sectionContent: any;
-  quickFix: React.FC<IQuickFix>;
+  quickFix: React.ReactNode;
 }
 
 const ignoreFields = new Set([
-  // 'cell_ids',
   'lineNumbers',
   'markdown',
   'source',
   'misc',
-  'cells'
+  'cells',
+  'fileName'
 ]);
 
+const getJumpIndex = (sectionName: string, sectionContent: any): number => {
+  if (sectionName === 'author') {
+    return 1;
+  }
+  // if it's a stage, jump to the top cell if existed
+  if (stages.has(sectionName) && sectionContent['cell_ids'].length > 0) {
+    return sectionContent['cell_ids'][0];
+  }
+  // otherwise insert to bottom
+  return Infinity;
+};
+
 const SectionContent = ({
-  sectionName,
   notebook,
   sectionContent,
   quickFix
-}): JSX.Element[] =>
+}: ISectionContent): React.ReactNode =>
   typeof sectionContent !== 'object'
     ? null
     : Object.entries(sectionContent).map(([k, v]: [string, any], idx) => {
@@ -108,7 +92,7 @@ const SectionContent = ({
                 ''
               ) : (
                 <>
-                  <h2>{k}</h2>
+                  {k === 'description' ? null : <h2>{k}</h2>}
                   <p>{v}</p>
                 </>
               )}
@@ -117,7 +101,7 @@ const SectionContent = ({
         }
       });
 
-const Section = ({ notebook, annotMap: amap }: ISectionProps): JSX.Element => {
+const Section: React.FC<ISectionProps> = ({ notebook, annotMap: amap }) => {
   const [annotMap, updateAnnotMap] = useImmer(amap);
   const [data, updateData] = useState({});
 
@@ -147,17 +131,16 @@ const Section = ({ notebook, annotMap: amap }: ISectionProps): JSX.Element => {
       </Button>
       {Object.entries(data).map(([sectionName, sectionContent]) =>
         SectionContent({
-          sectionName,
           notebook,
           sectionContent,
           quickFix: (
             <QuickFix
               sectionName={sectionName}
+              sectionTitle={sectionContent['title']}
               annotMap={annotMap}
               updateAnnotMap={updateAnnotMap}
               notebook={notebook}
-              idx={1} // TODO find the right index
-              updateMockData={updateData}
+              idx={getJumpIndex(sectionName, sectionContent)} // TODO find the right index
             />
           )
         })

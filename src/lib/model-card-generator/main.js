@@ -25,18 +25,18 @@ var countLines = 0;
 class ModelCard {
     constructor() {
         this.JSONSchema = {
-            modelname:{title:"", Filename:"", cell_ids:[]},
+            modelname:{title:"", fileName:"", cell_ids:[]},
             author:{title:"Author"},
             dataset: {title: "Dataset", description:"", links:""},
             references: {title:"References", links:[]},
             libraries:{title:"Libraries Used", lib:[]},
-            misc:{title:"Miscellaneous", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
             plotting:{title:"Plotting", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
             datacleaning:{title:"Data Cleaning", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
             preprocessing:{title:"Preprocessing", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
             hyperparameters:{title:"Hyperparameters", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", values:""},
             modeltraining:{title:"Model Training", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
-            modelevaluation:{title:"Evaluation", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]}
+            modelevaluation:{title:"Evaluation", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
+            misc:{title:"Miscellaneous", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]}
         }
         this.markdown = [];
         this.intended_use = "";
@@ -117,11 +117,11 @@ function readCells(content, new_color_map) {
     let id_count = -1;
     let flag = true;
     let programbuilder = new py.ProgramBuilder();
-    // model_card.JSONSchema["modelname"]["Filename"] = filePath.split("/").slice(-1).toString();
+    // model_card.JSONSchema["modelname"]["fileName"] = filePath.split("/").slice(-1).toString();
     // TODO get name for the file with docManager
-    model_card.JSONSchema["modelname"]["Filename"] = "hello";
+    model_card.JSONSchema["modelname"]["fileName"] = "hello";
     // console.log();
-    // fs.mkdirSync("../example/" + model_card.JSONSchema["modelname"]["Filename"], { recursive: true })
+    // fs.mkdirSync("../example/" + model_card.JSONSchema["modelname"]["fileName"], { recursive: true })
 
     for (let cell of jsondata['cells']) {
         let sourceCode = "";
@@ -135,7 +135,7 @@ function readCells(content, new_color_map) {
             }
             if (id_count == -1 && flag) {
                 flag = false;
-                model_card.JSONSchema["modelname"]["title"] = cell['source'][0];
+                model_card.JSONSchema["modelname"]["title"] = cell['source'];
             }
             id_count += 1;
 
@@ -334,7 +334,7 @@ function generateMarkdown(model_card, notebookCode, markdown_contents) {
                         for (let image of model_card.JSONSchema[keys[i]][stageKey]) {
                             //![id5](./image/id5.jpg)
                             markdown_contents += "![" + image + "](" + "../example/" +
-                                model_card.JSONSchema["modelname"]["Filename"] + "/" + image + ")" + "\n";
+                                model_card.JSONSchema["modelname"]["fileName"] + "/" + image + ")" + "\n";
                         }
                     } else if (keys[i] == "references" && stageKey == "links") {
                         for (let link of model_card.JSONSchema['references']['links']) {
