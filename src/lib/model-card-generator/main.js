@@ -26,10 +26,10 @@ class ModelCard {
     constructor() {
         this.JSONSchema = {
             modelname:{title:"", fileName:"", cell_ids:[]},
-            author:{title:"Author"},
+            author:{title:"Author", description: ""},
             dataset: {title: "Dataset", description:"", links:""},
-            references: {title:"References", links:[]},
-            libraries:{title:"Libraries Used", lib:[]},
+            references: {title:"References", description: "", links:[]},
+            libraries:{title:"Libraries Used", description: "", lib:[]},
             plotting:{title:"Plotting", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
             datacleaning:{title:"Data Cleaning", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
             preprocessing:{title:"Preprocessing", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},

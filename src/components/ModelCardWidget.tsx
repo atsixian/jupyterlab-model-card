@@ -28,20 +28,36 @@ interface ISectionProps {
   notebook: Notebook;
 }
 
+/** Items in the generated model card */
+interface ISchemaItem {
+  /** title of the section */
+  title: string;
+  /** customized description */
+  description: string;
+}
+interface ISchemaStageItem extends ISchemaItem {
+  cell_ids: number[];
+  figures: string[];
+}
+interface ISchema {
+  modelname: { title: string };
+  author: ISchemaItem;
+  dataset: ISchemaItem;
+  references: ISchemaItem;
+  libraries: ISchemaItem;
+  plotting: ISchemaStageItem;
+  datacleaning: ISchemaStageItem;
+  preprocessing: ISchemaStageItem;
+  hyperparameters: ISchemaStageItem;
+  modeltraining: ISchemaStageItem;
+  modelevaluation: ISchemaStageItem;
+  misc: ISchemaItem;
+}
 interface ISectionContent {
   notebook: Notebook;
-  sectionContent: any;
+  sectionContent: ISchemaItem | ISchemaStageItem;
   quickFix: React.ReactNode;
 }
-
-const ignoreFields = new Set([
-  'lineNumbers',
-  'markdown',
-  'source',
-  'misc',
-  'cells',
-  'fileName'
-]);
 
 const getJumpIndex = (sectionName: string, sectionContent: any): number => {
   if (sectionName === 'author') {
@@ -55,52 +71,39 @@ const getJumpIndex = (sectionName: string, sectionContent: any): number => {
   return Infinity;
 };
 
-const SectionContent = ({
+const SectionContent: React.FC<ISectionContent> = ({
   notebook,
   sectionContent,
   quickFix
-}: ISectionContent): React.ReactNode =>
-  typeof sectionContent !== 'object'
-    ? null
-    : Object.entries(sectionContent).map(([k, v]: [string, any], idx) => {
-        if (ignoreFields.has(k)) {
-          return null;
-        }
-        if (k === 'title') {
-          return (
-            <h1 key={idx}>
-              {v} {quickFix}
-            </h1>
-          );
-        } else if (k === 'cell_ids') {
-          return v.map((cid: number, idx: number) => (
-            <Button key={idx} onClick={() => jumpToCell(notebook, cid)}>
+}) => {
+  if (typeof sectionContent !== 'object') {
+    return null;
+  }
+  return (
+    <>
+      <h1>
+        {sectionContent.title} {quickFix}
+      </h1>
+      <p>{sectionContent.description}</p>
+      {'cell_ids' in sectionContent
+        ? sectionContent.cell_ids.map((cid: number, idx: number) => (
+            <Button key={idx} onClick={(): void => jumpToCell(notebook, cid)}>
               {cid}
             </Button>
-          ));
-        } else if (k === 'figures') {
-          return v.map((src: string, idx: number) => (
+          ))
+        : null}
+      {'figures' in sectionContent
+        ? sectionContent.figures.map((src: string, idx: number) => (
             <img key={idx} src={`data:image/png;base64,${src}`} />
-          ));
-        } else {
-          return (
-            <React.Fragment key={idx}>
-              {v.length === 0 ? (
-                ''
-              ) : (
-                <>
-                  {k === 'description' ? null : <h2>{k}</h2>}
-                  <p>{v}</p>
-                </>
-              )}
-            </React.Fragment>
-          );
-        }
-      });
+          ))
+        : null}
+    </>
+  );
+};
 
 const Section: React.FC<ISectionProps> = ({ notebook }) => {
-  const [annotMap, updateAnnotMap] = useImmer(new Map() as AnnotMap);
-  const [data, updateData] = useState({});
+  const [annotMap, updateAnnotMap] = useImmer<AnnotMap>(new Map());
+  const [data, updateData] = useState<ISchema>({} as ISchema);
 
   useEffect(() => {
     // console.log('updated map', amap);
@@ -120,21 +123,24 @@ const Section: React.FC<ISectionProps> = ({ notebook }) => {
 
   return (
     <>
-      {Object.entries(data).map(([sectionName, sectionContent]) =>
-        SectionContent({
-          notebook,
-          sectionContent,
-          quickFix: (
-            <QuickFix
-              sectionName={sectionName}
-              sectionTitle={sectionContent['title']}
-              annotMap={annotMap}
-              updateAnnotMap={updateAnnotMap}
-              notebook={notebook}
-              idx={getJumpIndex(sectionName, sectionContent)} // TODO find the right index
-            />
-          )
-        })
+      {Object.entries(data).map(
+        ([sectionName, sectionContent]: [string, ISchemaItem], idx: number) => (
+          <SectionContent
+            key={idx}
+            notebook={notebook}
+            sectionContent={sectionContent}
+            quickFix={
+              <QuickFix
+                sectionName={sectionName}
+                sectionTitle={sectionContent.title}
+                annotMap={annotMap}
+                updateAnnotMap={updateAnnotMap}
+                notebook={notebook}
+                idx={getJumpIndex(sectionName, sectionContent)}
+              />
+            }
+          />
+        )
       )}
     </>
   );
