@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import React from 'react';
 import { EditTwoTone } from '@ant-design/icons';
 import { Notebook } from '@jupyterlab/notebook';
@@ -26,7 +27,7 @@ const QuickFix: React.FC<IQuickFix> = ({
   updateAnnotMap,
   notebook,
   idx
-}) => {
+}: IQuickFix) => {
   const existed = annotMap.has(sectionName);
   return existed ? (
     <EditTwoTone
@@ -39,7 +40,7 @@ const QuickFix: React.FC<IQuickFix> = ({
       title={`Add a ${
         stages.has(sectionName) ? 'description' : 'new cell'
       } for ${sectionTitle}?`}
-      onConfirm={() => {
+      onConfirm={(): void => {
         notebook.model.cells.insert(
           idx, // TODO figure out where to insert it
           new MarkdownCellModel({

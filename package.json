@@ -1,7 +1,7 @@
 {
-  "name": "jupyterlab-apod",
-  "version": "0.1.0",
-  "description": "random pic",
+  "name": "jupyterlab-model-card",
+  "version": "1.0.0",
+  "description": "Generate model cards for machine learning models",
   "keywords": [
     "jupyter",
     "jupyterlab",
@@ -55,6 +55,7 @@
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.10.1",
     "eslint-plugin-prettier": "^3.1.2",
+    "eslint-plugin-react": "^7.21.5",
     "prettier": "1.16.4",
     "rimraf": "^2.6.1",
     "typescript": "~3.7.0"
