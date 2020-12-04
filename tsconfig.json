@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
+    "allowJs": true,
     "composite": true,
     "declaration": true,
     "esModuleInterop": true,
@@ -12,12 +13,12 @@
     "noImplicitAny": false,
     "preserveWatchOutput": true,
     "resolveJsonModule": true,
-    "outDir": "lib",
+    "outDir": "dist",
     "rootDir": ".",
     "strict": true,
     "strictNullChecks": false,
     "target": "es2017",
     "types": []
   },
-  "include": ["src/**/*", "src/**/*.json", "assets/**/*", "assets/**/*.json"]
+  "include": ["src/**/*", "src/**/*.json", "assets/**/*", "assets/**/*.json", "src/lib/model-card-generator/*.js"],
 }

@@ -1,0 +1,175 @@
+diff --git a/node_modules/@andrewhead/python-program-analysis/dist/es5/index.js b/node_modules/@andrewhead/python-program-analysis/dist/es5/index.js
+index 34d3553..1bb74ef 100644
+--- a/node_modules/@andrewhead/python-program-analysis/dist/es5/index.js
++++ b/node_modules/@andrewhead/python-program-analysis/dist/es5/index.js
+@@ -14,4 +14,5 @@ __export(require("./cellslice"));
+ __export(require("./log-slicer"));
+ __export(require("./program-builder"));
+ __export(require("./specs/index"));
++__export(require("./rewrite-magics"));
+ //# sourceMappingURL=index.js.map
+\ No newline at end of file
+diff --git a/node_modules/@andrewhead/python-program-analysis/dist/es5/printNode.js b/node_modules/@andrewhead/python-program-analysis/dist/es5/printNode.js
+index 28fb856..441fc79 100644
+--- a/node_modules/@andrewhead/python-program-analysis/dist/es5/printNode.js
++++ b/node_modules/@andrewhead/python-program-analysis/dist/es5/printNode.js
+@@ -29,7 +29,7 @@ function printTabbed(node, tabLevel) {
+                 lines(node.code, tabLevel + 1));
+         case 'comp_for':
+         case 'comp_if':
+-            throw 'not implemented';
++            // throw 'not implemented';
+         case 'continue':
+             return tabs + 'continue';
+         case 'decorator':
+@@ -72,7 +72,12 @@ function printTabbed(node, tabLevel) {
+                     .map(function (im) { return im.path + (im.name ? ' as ' + im.name : ''); })
+                     .join(comma));
+         case 'global':
+-            return tabs + 'global ' + node.names.join(comma);
++            // return tabs + 'global ' + node.names.join(comma);
++            if (typeof(node.names) == 'undefined' || typeof(node.names) == 'string') {
++                return tabs + 'global ' + node.names;
++              } else {
++                return tabs + 'global ' + node.names.join(comma);
++            }
+         case 'if':
+             return (tabs +
+                 'if ' +
+diff --git a/node_modules/@andrewhead/python-program-analysis/dist/es5/program-builder.js b/node_modules/@andrewhead/python-program-analysis/dist/es5/program-builder.js
+index 02e932d..c054816 100644
+--- a/node_modules/@andrewhead/python-program-analysis/dist/es5/program-builder.js
++++ b/node_modules/@andrewhead/python-program-analysis/dist/es5/program-builder.js
+@@ -49,7 +49,8 @@ var Program = /** @class */ (function () {
+             // This can be sped up by saving this computation.
+             (_a = _this.tree.code).push.apply(_a, shiftStatementLines(cp.statements, Math.min.apply(Math, cellLines) - 1));
+         });
+-        this.text = cellPrograms.map(function (cp) { return magicsRewriter.rewrite(cp.cell.text + '\n'); }).join('');
++        // this.text = cellPrograms.map(function (cp) { return magicsRewriter.rewrite(cp.cell.text + '\n'); }).join('');
++        this.text = cellPrograms.map(function (cp) { return (cp.cell.text + '\n'); }).join('');
+     }
+     return Program;
+ }());
+@@ -126,7 +127,8 @@ var ProgramBuilder = /** @class */ (function () {
+             var hasError = cell.hasError;
+             try {
+                 // Parse the cell's code.
+-                var tree = ast.parse(magicsRewriter.rewrite(cell.text) + '\n');
++                // var tree = ast.parse(magicsRewriter.rewrite(cell.text) + '\n');
++                let tree = ast.parse(cell.text + '\n');
+                 statements = tree.code;
+                 // Annotate each node with cell ID info, for dataflow caching.
+                 for (var _b = 0, _c = ast.walk(tree); _b < _c.length; _b++) {
+diff --git a/node_modules/@andrewhead/python-program-analysis/dist/es5/rewrite-magics.js b/node_modules/@andrewhead/python-program-analysis/dist/es5/rewrite-magics.js
+index af0668c..61e8dba 100644
+--- a/node_modules/@andrewhead/python-program-analysis/dist/es5/rewrite-magics.js
++++ b/node_modules/@andrewhead/python-program-analysis/dist/es5/rewrite-magics.js
+@@ -32,7 +32,7 @@ var MagicsRewriter = /** @class */ (function () {
+      */
+     MagicsRewriter.prototype.rewriteCellMagic = function (text) {
+         // 
+-        if (text.match(/^[^#\s]*\s*%%/gm)) {
++        if (String(text).match(/^[^#\s]*\s*%%/gm)) {
+             return text
+                 .split('\n')
+                 .map(function (l) { return '##' + l; }) // #%% is used for VS Code Python cell markers, so avoid that combo
+@@ -45,7 +45,7 @@ var MagicsRewriter = /** @class */ (function () {
+      */
+     MagicsRewriter.prototype.rewriteLineMagic = function (text, lineMagicRewriters) {
+         // Create a mapping from character offsets to line starts.
+-        var lines = text.split('\n');
++        var lines = String(text).split('\n');
+         var lastLineStart = 0;
+         var lineStarts = lines.map(function (line, i) {
+             if (i == 0) {
+@@ -56,7 +56,7 @@ var MagicsRewriter = /** @class */ (function () {
+             return lineStart;
+         });
+         // Map magic to comment and location.
+-        return text.replace(/^\s*(%(?:\\\s*\n|[^\n])+)/gm, function (match, magicStmt) {
++        return String(text).replace(/^\s*(%(?:\\\s*\n|[^\n])+)/gm, function (match, magicStmt) {
+             // Find the start and end lines where the character appeared.
+             var startLine = -1, startCol = -1;
+             var endLine = -1, endCol = -1;
+diff --git a/node_modules/@andrewhead/python-program-analysis/dist/es5/symbol-table.js b/node_modules/@andrewhead/python-program-analysis/dist/es5/symbol-table.js
+index 74eeebc..48cf0e4 100644
+--- a/node_modules/@andrewhead/python-program-analysis/dist/es5/symbol-table.js
++++ b/node_modules/@andrewhead/python-program-analysis/dist/es5/symbol-table.js
+@@ -92,7 +92,7 @@ var SymbolTable = /** @class */ (function () {
+     SymbolTable.prototype.importModule = function (modulePath, alias) {
+         var spec = this.lookupSpec(this.jsonSpecs, modulePath.split("."));
+         if (!spec) {
+-            console.log("*** WARNING no spec for module " + modulePath);
++            // console.log("*** WARNING no spec for module " + modulePath);
+             return;
+         }
+         if (modulePath) {
+@@ -106,7 +106,7 @@ var SymbolTable = /** @class */ (function () {
+         var _this = this;
+         var spec = this.lookupSpec(this.jsonSpecs, namePath.split("."));
+         if (!spec) {
+-            console.log("*** WARNING no spec for module " + namePath);
++            // console.log("*** WARNING no spec for module " + namePath);
+             return;
+         }
+         if (spec) {
+@@ -132,7 +132,7 @@ var SymbolTable = /** @class */ (function () {
+             });
+         }
+         else {
+-            console.log("*** WARNING no spec for module " + namePath);
++            // console.log("*** WARNING no spec for module " + namePath);
+         }
+     };
+     SymbolTable.prototype.lookupSpec = function (map, parts) {
+diff --git a/node_modules/@andrewhead/python-program-analysis/dist/es5/testcell.d.ts b/node_modules/@andrewhead/python-program-analysis/dist/es5/testcell.d.ts
+new file mode 100644
+index 0000000..5152c48
+--- /dev/null
++++ b/node_modules/@andrewhead/python-program-analysis/dist/es5/testcell.d.ts
+@@ -0,0 +1,10 @@
++import { Cell } from "..";
++export declare class TestCell implements Cell {
++    text: string;
++    executionCount: number;
++    hasError: boolean;
++    executionEventId: string;
++    persistentId: string;
++    constructor(text: string, executionCount: number, executionEventId?: string, persistentId?: string, hasError?: boolean);
++    deepCopy(): this;
++}
+diff --git a/node_modules/@andrewhead/python-program-analysis/dist/es5/testcell.js b/node_modules/@andrewhead/python-program-analysis/dist/es5/testcell.js
+new file mode 100644
+index 0000000..e6142bb
+--- /dev/null
++++ b/node_modules/@andrewhead/python-program-analysis/dist/es5/testcell.js
+@@ -0,0 +1,20 @@
++"use strict";
++Object.defineProperty(exports, "__esModule", { value: true });
++var TestCell = /** @class */ (function () {
++    function TestCell(text, executionCount, executionEventId, persistentId, hasError) {
++        if (hasError === void 0) { hasError = false; }
++        this.text = text;
++        this.executionCount = executionCount;
++        this.hasError = hasError;
++        this.executionEventId = executionEventId || genid();
++        this.persistentId = persistentId || genid();
++    }
++    TestCell.prototype.deepCopy = function () { return this; }; // not used for testing
++    return TestCell;
++}());
++exports.TestCell = TestCell;
++var ID = 0;
++function genid() {
++    return 'id' + (ID++);
++}
++//# sourceMappingURL=testcell.js.map
+\ No newline at end of file
+diff --git a/node_modules/@andrewhead/python-program-analysis/dist/es5/testcell.js.map b/node_modules/@andrewhead/python-program-analysis/dist/es5/testcell.js.map
+new file mode 100644
+index 0000000..2711ce7
+--- /dev/null
++++ b/node_modules/@andrewhead/python-program-analysis/dist/es5/testcell.js.map
+@@ -0,0 +1 @@
++{"version":3,"file":"testcell.js","sourceRoot":"","sources":["../../../src/test/testcell.ts"],"names":[],"mappings":";;AAEA;IAIC,kBACQ,IAAY,EACZ,cAAsB,EAC7B,gBAAyB,EACzB,YAAqB,EACd,QAAgB;QAAhB,yBAAA,EAAA,gBAAgB;QAJhB,SAAI,GAAJ,IAAI,CAAQ;QACZ,mBAAc,GAAd,cAAc,CAAQ;QAGtB,aAAQ,GAAR,QAAQ,CAAQ;QAEvB,IAAI,CAAC,gBAAgB,GAAG,gBAAgB,IAAI,KAAK,EAAE,CAAC;QACpD,IAAI,CAAC,YAAY,GAAG,YAAY,IAAI,KAAK,EAAE,CAAC;IAC7C,CAAC;IAEM,2BAAQ,GAAf,cAAoB,OAAO,IAAI,CAAC,CAAC,CAAC,EAAC,uBAAuB;IAC3D,eAAC;AAAD,CAAC,AAhBD,IAgBC;AAhBY,4BAAQ;AAmBrB,IAAI,EAAE,GAAG,CAAC,CAAC;AACX,SAAS,KAAK;IACb,OAAO,IAAI,GAAG,CAAC,EAAE,EAAE,CAAC,CAAC;AACtB,CAAC"}
+\ No newline at end of file

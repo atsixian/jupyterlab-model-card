@@ -1,7 +1,9 @@
+*.log
 *.bundle.*
-lib/
+dist/
 node_modules/
 *.egg-info/
 .ipynb_checkpoints
 *.tsbuildinfo
 .vscode
+.DS_Store
