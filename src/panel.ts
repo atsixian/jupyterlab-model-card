@@ -6,7 +6,6 @@ import { ModelCardWidget } from './components/ModelCardWidget';
 import { ToolbarButton } from '@jupyterlab/apputils';
 import { JupyterFrontEnd } from '@jupyterlab/application';
 import { command } from './constants';
-import { getAnnotMap } from './util/mdExtractor';
 
 export class ExamplePanel extends StackedPanel
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel> {
@@ -35,7 +34,7 @@ export class ExamplePanel extends StackedPanel
     const callback = (): void => {
       // console.log(context.model.toJSON());
       // !This ensures our view is synced with model data
-      this._view.updateModel(panel.content, getAnnotMap(panel.content));
+      this._view.updateModel(panel.content);
       this._app.commands.execute(command);
     };
     this._button = new ToolbarButton({
@@ -49,10 +48,7 @@ export class ExamplePanel extends StackedPanel
 
     // create the frontend view after the context is ready
     context.ready.then(() => {
-      this._view = new ModelCardWidget(
-        panel.content,
-        getAnnotMap(panel.content)
-      );
+      this._view = new ModelCardWidget(panel.content);
       this.addWidget(this._view);
     });
 

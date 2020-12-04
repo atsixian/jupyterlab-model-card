@@ -14,7 +14,7 @@ export type AnnotMap = Map<string, AnnotContent>;
 
 export const getAnnotMap = (nb: Notebook): AnnotMap => {
   const annotMap = new Map<string, AnnotContent>();
-  let m, contentMatch;
+  let m: string[], contentMatch: string[];
   each(nb.model.cells, (cell, idx) => {
     if (cell.type === 'markdown') {
       m = cell.value.text.match(start);
@@ -24,6 +24,6 @@ export const getAnnotMap = (nb: Notebook): AnnotMap => {
       }
     }
   });
-  console.log(annotMap);
+  // console.log(annotMap);
   return annotMap;
 };

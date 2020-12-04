@@ -5,20 +5,18 @@ import { INotebookModel, Notebook } from '@jupyterlab/notebook';
 import { Button, Input, Typography } from 'antd';
 import 'antd/dist/antd.css';
 import { enableMapSet } from 'immer';
+import clone from 'lodash/clone';
 import React, { useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import { useImmer } from 'use-immer';
 import { stages } from '../constants';
 import { generateModelCard } from '../lib/model-card-generator/main';
-import { getAnnotMap, AnnotContent, AnnotMap } from '../util/mdExtractor';
+import { AnnotMap, getAnnotMap } from '../util/mdExtractor';
 import { jumpToCell } from '../util/notebook_private';
 import QuickFix from './QuickFix';
 const { Title } = Typography;
 const { TextArea } = Input;
 
-// TODO only pass the notebook, get model from that?
-// TODO seprate state for each section?
-// TODO handle empty state when notebook is closed
 enableMapSet();
 
 interface IProps {
@@ -28,7 +26,6 @@ interface IProps {
 
 interface ISectionProps {
   notebook: Notebook;
-  annotMap: Map<string, AnnotContent>;
 }
 
 interface ISectionContent {
@@ -101,12 +98,14 @@ const SectionContent = ({
         }
       });
 
-const Section: React.FC<ISectionProps> = ({ notebook, annotMap: amap }) => {
-  const [annotMap, updateAnnotMap] = useImmer(amap);
+const Section: React.FC<ISectionProps> = ({ notebook }) => {
+  const [annotMap, updateAnnotMap] = useImmer(new Map() as AnnotMap);
   const [data, updateData] = useState({});
 
   useEffect(() => {
     // console.log('updated map', amap);
+    const amap = getAnnotMap(notebook);
+    console.log(amap);
     updateAnnotMap(() => amap);
     const modelCard: any = generateModelCard(notebook.model.toJSON());
 
@@ -117,18 +116,10 @@ const Section: React.FC<ISectionProps> = ({ notebook, annotMap: amap }) => {
     });
     console.log(modelCard);
     updateData(modelCard);
-  }, [amap, notebook]);
+  }, [notebook]);
 
   return (
     <>
-      <Button
-        type="primary"
-        onClick={() => {
-          getAnnotMap(notebook);
-        }}
-      >
-        Markdown test
-      </Button>
       {Object.entries(data).map(([sectionName, sectionContent]) =>
         SectionContent({
           notebook,
@@ -152,29 +143,23 @@ const Section: React.FC<ISectionProps> = ({ notebook, annotMap: amap }) => {
 export class ModelCardWidget extends ReactWidget {
   /** Data in the current notebook */
   private _notebook: Notebook;
-  private _annotMap: AnnotMap;
 
-  constructor(notebook: Notebook, annotMap: AnnotMap) {
+  constructor(notebook: Notebook) {
     super();
     this._notebook = notebook;
-    this._annotMap = annotMap;
     this.addClass('jp-ReactWidget');
   }
 
   // rerender the component every time the command is executed
   onUpdateRequest(): void {
-    ReactDOM.render(
-      <Section notebook={this._notebook} annotMap={this._annotMap} />,
-      this.node
-    );
+    ReactDOM.render(<Section notebook={this._notebook} />, this.node);
   }
 
-  updateModel(notebook: Notebook, annotMap: AnnotMap): void {
-    this._notebook = notebook;
-    this._annotMap = annotMap;
+  updateModel(notebook: Notebook): void {
+    this._notebook = clone(notebook);
   }
 
   render(): JSX.Element {
-    return <Section notebook={this._notebook} annotMap={this._annotMap} />;
+    return <Section notebook={this._notebook} />;
   }
 }
