@@ -42,7 +42,7 @@ const QuickFix: React.FC<IQuickFix> = ({
       } for ${sectionTitle}?`}
       onConfirm={(): void => {
         notebook.model.cells.insert(
-          idx, // TODO figure out where to insert it
+          idx,
           new MarkdownCellModel({
             cell: {
               cell_type: 'markdown',

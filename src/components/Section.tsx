@@ -9,6 +9,8 @@ import { generateModelCard } from '../lib/model-card-generator/main';
 import { AnnotMap, getAnnotMap } from '../util/mdExtractor';
 import { jumpToCell } from '../util/notebook_private';
 import QuickFix from './QuickFix';
+import { DeleteOutlined } from '@ant-design/icons';
+import ReactMarkdown from 'react-markdown';
 
 enableMapSet();
 
@@ -43,8 +45,10 @@ interface ISchema {
 }
 interface ISectionContent {
   notebook: Notebook;
+  sectionName: string;
   sectionContent: ISchemaItem | ISchemaStageItem;
   quickFix: React.ReactNode;
+  updateData: Function;
 }
 
 const getJumpIndex = (sectionName: string, sectionContent: any): number => {
@@ -52,8 +56,8 @@ const getJumpIndex = (sectionName: string, sectionContent: any): number => {
     return 1;
   }
   // if it's a stage, jump to the top cell if existed
-  if (stages.has(sectionName) && sectionContent['cell_ids'].length > 0) {
-    return sectionContent['cell_ids'][0];
+  if (stages.has(sectionName) && sectionContent.cell_ids.length > 0) {
+    return sectionContent.cell_ids[0];
   }
   // otherwise insert to bottom
   return Infinity;
@@ -61,28 +65,59 @@ const getJumpIndex = (sectionName: string, sectionContent: any): number => {
 
 const SectionContent: React.FC<ISectionContent> = ({
   notebook,
+  sectionName,
   sectionContent,
-  quickFix
+  quickFix,
+  updateData
 }: ISectionContent) => {
   if (typeof sectionContent !== 'object') {
     return null;
   }
   return (
     <>
-      <h1>
-        {sectionContent.title} {quickFix}
-      </h1>
+      <>
+        {sectionName === 'modelname' ? (
+          <ReactMarkdown>{sectionContent.title}</ReactMarkdown>
+        ) : (
+          <h1>
+            {sectionContent.title} {quickFix}
+          </h1>
+        )}
+      </>
       <p>{sectionContent.description}</p>
-      {'cell_ids' in sectionContent
-        ? sectionContent.cell_ids.map((cid: number, idx: number) => (
-            <Button key={idx} onClick={(): void => jumpToCell(notebook, cid)}>
-              {cid}
-            </Button>
-          ))
-        : null}
+      <div style={{ display: 'block' }}>
+        {'cell_ids' in sectionContent && sectionContent.title !== 'misc'
+          ? sectionContent.cell_ids.map((cid: number, idx: number) => (
+              <>
+                <Button
+                  key={idx}
+                  onClick={(): void => jumpToCell(notebook, cid)}
+                >
+                  {cid}
+                </Button>
+                <DeleteOutlined
+                  onClick={() => {
+                    notebook.model.cells
+                      .get(cid)
+                      .metadata.set('stage', 'ignore');
+                    updateData(draft => {
+                      draft[sectionName]['cell_ids'] = draft[sectionName][
+                        'cell_ids'
+                      ].filter(item => item !== cid);
+                    });
+                  }}
+                />
+              </>
+            ))
+          : null}
+      </div>
       {'figures' in sectionContent
         ? sectionContent.figures.map((src: string, idx: number) => (
-            <img key={idx} src={`data:image/png;base64,${src}`} />
+            <img
+              style={{ display: 'block' }}
+              key={idx}
+              src={`data:image/png;base64,${src}`}
+            />
           ))
         : null}
     </>
@@ -91,7 +126,7 @@ const SectionContent: React.FC<ISectionContent> = ({
 
 const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
   const [annotMap, updateAnnotMap] = useImmer<AnnotMap>(new Map());
-  const [data, updateData] = useState<ISchema>({} as ISchema);
+  const [data, updateData] = useImmer<ISchema>({} as ISchema);
 
   useEffect(() => {
     // console.log('updated map', amap);
@@ -106,8 +141,8 @@ const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
       }
     });
     console.log(modelCard);
-    updateData(modelCard);
-  }, [notebook]);
+    updateData(() => modelCard);
+  }, [notebook, data]);
 
   return (
     <>
@@ -116,7 +151,9 @@ const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
           <SectionContent
             key={idx}
             notebook={notebook}
+            sectionName={sectionName}
             sectionContent={sectionContent}
+            updateData={updateData}
             quickFix={
               <QuickFix
                 sectionName={sectionName}

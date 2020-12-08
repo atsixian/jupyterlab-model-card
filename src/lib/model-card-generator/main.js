@@ -118,8 +118,7 @@ function readCells(content, new_color_map) {
     let flag = true;
     let programbuilder = new py.ProgramBuilder();
     // model_card.JSONSchema["modelname"]["fileName"] = filePath.split("/").slice(-1).toString();
-    // TODO get name for the file with docManager
-    model_card.JSONSchema["modelname"]["fileName"] = "hello";
+    // model_card.JSONSchema["modelname"]["fileName"] = "hello";
     // console.log();
     // fs.mkdirSync("../example/" + model_card.JSONSchema["modelname"]["fileName"], { recursive: true })
 
@@ -142,29 +141,35 @@ function readCells(content, new_color_map) {
         } else if (cell['source'][0] != undefined){
             id_count += 1;
             var key = cell['execution_count'].toString();
+            // user reclassification
             if (key in new_color_map) {
                 var stage = new_color_map[key];
-                if (stage == "Data collection" || stage == "Data cleaning" || stage == "Data labelling") {
-                    currStage = "datacleaning";
-                } else if (stage == "Feature Engineering") {
-                    currStage = "preprocessing";
-                } else if (stage == "Training") {
-                    currStage = "modeltraining";
-                } else if (stage == "Evaluation") {
-                    currStage = "modelevaluation";
-                } else if (stage == "Plotting") {
-                    currStage = "plotting";
+                if (cell['metadata']['stage'] === 'ignore') {
+                    debugger
+                    currStage = 'misc'
+                }
+                else {
+                    if (stage == "Data collection" || stage == "Data cleaning" || stage == "Data labelling") {
+                        currStage = "datacleaning";
+                    } else if (stage == "Feature Engineering") {
+                        currStage = "preprocessing";
+                    } else if (stage == "Training") {
+                        currStage = "modeltraining";
+                    } else if (stage == "Evaluation") {
+                        currStage = "modelevaluation";
+                    } else if (stage == "Plotting") {
+                        currStage = "plotting";
+                    }
                 }
             }
-
-            for (let line of cell['source']) {
+            const cells = cell['source'].split('\n');
+            for (let line of cells) {
                 if (line[0] === "%") {
                     line = rewriter.rewriteLineMagic(line);
-                    line = '#' + line;
                 }
                 countLines += 1;
                 model_card.JSONSchema[currStage]["lineNumbers"].push(countLines);
-                sourceCode += line;
+                sourceCode += line + '\n';
             }
             notebookCode += sourceCode + '\n';
             let code_cell = createCell(sourceCode, cell['execution_count'], cell['outputs'][0]);
