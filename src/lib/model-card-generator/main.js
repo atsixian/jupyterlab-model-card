@@ -145,7 +145,6 @@ function readCells(content, new_color_map) {
             if (key in new_color_map) {
                 var stage = new_color_map[key];
                 if (cell['metadata']['stage'] === 'ignore') {
-                    debugger
                     currStage = 'misc'
                 }
                 else {

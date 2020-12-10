@@ -11,6 +11,7 @@ import { jumpToCell } from '../util/notebook_private';
 import QuickFix from './QuickFix';
 import { DeleteOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
+import styled from 'styled-components';
 
 enableMapSet();
 
@@ -63,6 +64,31 @@ const getJumpIndex = (sectionName: string, sectionContent: any): number => {
   return Infinity;
 };
 
+const Bar = styled.div`
+  position: relative;
+  background: aliceblue;
+  width: 40%;
+  height: 40px;
+  border-radius: 10px;
+`;
+
+const VerticalLine: any = styled.div`
+  position: absolute;
+  left: ${(props: any): string => props.left}%;
+  height: 100%;
+  width: 5px;
+  background-color: lightskyblue;
+  border-radius: 15px;
+  transition: transform 0.2s, background-color 0.2s;
+
+  &:hover {
+    transform: scale(3, 1.5);
+    background-color: #1890ff;
+    z-index: 2;
+    cursor: pointer;
+  }
+`;
+
 const SectionContent: React.FC<ISectionContent> = ({
   notebook,
   sectionName,
@@ -86,30 +112,41 @@ const SectionContent: React.FC<ISectionContent> = ({
       </>
       <p>{sectionContent.description}</p>
       <div style={{ display: 'block' }}>
-        {'cell_ids' in sectionContent && sectionContent.title !== 'misc'
-          ? sectionContent.cell_ids.map((cid: number, idx: number) => (
-              <>
-                <Button
-                  key={idx}
-                  onClick={(): void => jumpToCell(notebook, cid)}
-                >
-                  {cid}
-                </Button>
-                <DeleteOutlined
-                  onClick={() => {
-                    notebook.model.cells
-                      .get(cid)
-                      .metadata.set('stage', 'ignore');
-                    updateData(draft => {
-                      draft[sectionName]['cell_ids'] = draft[sectionName][
-                        'cell_ids'
-                      ].filter(item => item !== cid);
-                    });
-                  }}
-                />
-              </>
-            ))
-          : null}
+        {'cell_ids' in sectionContent &&
+        sectionContent.title !== 'misc' &&
+        sectionContent.cell_ids.length > 0 ? (
+          <Bar>
+            {sectionContent.cell_ids.map((cid: number, idx: number) => (
+              <VerticalLine
+                key={idx}
+                left={(cid / notebook.model.cells.length) * 100}
+                onClick={(): void => jumpToCell(notebook, cid)}
+              />
+            ))}
+          </Bar>
+        ) : // sectionContent.cell_ids.map((cid: number, idx: number) => (
+        //     <>
+        //       <Button
+        //         key={idx}
+        //         onClick={(): void => jumpToCell(notebook, cid)}
+        //       >
+        //         {cid}
+        //       </Button>
+        //       <DeleteOutlined
+        //         onClick={() => {
+        //           notebook.model.cells
+        //             .get(cid)
+        //             .metadata.set('stage', 'ignore');
+        //           updateData(draft => {
+        //             draft[sectionName]['cell_ids'] = draft[sectionName][
+        //               'cell_ids'
+        //             ].filter(item => item !== cid);
+        //           });
+        //         }}
+        //       />
+        //     </>
+        //   ))
+        null}
       </div>
       {'figures' in sectionContent
         ? sectionContent.figures.map((src: string, idx: number) => (
@@ -136,13 +173,12 @@ const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
     const modelCard: any = generateModelCard(notebook.model.toJSON());
 
     amap.forEach((value, key) => {
-      if (key in data) {
+      if (key in modelCard) {
         modelCard[key]['description'] = value.content;
       }
     });
-    console.log(modelCard);
     updateData(() => modelCard);
-  }, [notebook, data]);
+  }, [notebook]);
 
   return (
     <>
