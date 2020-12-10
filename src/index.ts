@@ -6,8 +6,8 @@ import {
 import { ICommandPalette, WidgetTracker } from '@jupyterlab/apputils';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 import { INotebookTracker } from '@jupyterlab/notebook';
-import { command } from './constants';
-import { ExamplePanel as ModelCardPanel } from './panel';
+import { commandCreate } from './constants';
+import { ModelCardPanel } from './panel';
 
 // TODO Add key binding for the command
 /**
@@ -52,20 +52,21 @@ const extension: JupyterFrontEndPlugin<void> = {
       return widget;
     }
 
-    app.commands.addCommand(command, {
+    app.commands.addCommand(commandCreate, {
       label: 'Model Card',
       caption: 'Generate Model Card',
+      isVisible: () => false,
       execute: createPanel
     });
 
-    palette.addItem({ command, category: 'Model Card' });
+    // palette.addItem({ command, category: 'Model Card' });
 
     const tracker = new WidgetTracker<ModelCardPanel>({
       namespace: 'model-card'
     });
 
     restorer.restore(tracker, {
-      command,
+      command: commandCreate,
       name: () => 'model-card'
     });
   }

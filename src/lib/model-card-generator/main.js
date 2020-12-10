@@ -11,6 +11,7 @@
 
 var py = require("modified-python-program-analysis/dist/es5");
 var graphing = require("./Graph.js").Graph;
+var stages = require("../../constants").stages;
 // var fs = require('fs');
 // var path = require('path');
 var ic = require("./infocell");
@@ -144,9 +145,14 @@ function readCells(content, new_color_map) {
             // user reclassification
             if (key in new_color_map) {
                 var stage = new_color_map[key];
-                if (cell['metadata']['stage'] === 'ignore') {
-                    currStage = 'misc'
+                const metadataStage = cell['metadata']['stage'];
+                // user reclassification
+                if ( metadataStage !== undefined && stages.has(metadataStage)) {
+                    currStage = metadataStage;
                 }
+                // if (cell['metadata']['stage'] === 'ignore') {
+                //     currStage = 'misc'
+                // } 
                 else {
                     if (stage == "Data collection" || stage == "Data cleaning" || stage == "Data labelling") {
                         currStage = "datacleaning";

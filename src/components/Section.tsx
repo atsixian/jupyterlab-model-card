@@ -1,17 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { UseSignal } from '@jupyterlab/apputils';
 import { Notebook } from '@jupyterlab/notebook';
-import { Button } from 'antd';
 import { enableMapSet } from 'immer';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import styled from 'styled-components';
 import { useImmer } from 'use-immer';
 import { stages } from '../constants';
 import { generateModelCard } from '../lib/model-card-generator/main';
 import { AnnotMap, getAnnotMap } from '../util/mdExtractor';
 import { jumpToCell } from '../util/notebook_private';
 import QuickFix from './QuickFix';
-import { DeleteOutlined } from '@ant-design/icons';
-import ReactMarkdown from 'react-markdown';
-import styled from 'styled-components';
 
 enableMapSet();
 
