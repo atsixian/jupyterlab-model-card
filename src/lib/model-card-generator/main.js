@@ -26,7 +26,7 @@ var countLines = 0;
 class ModelCard {
     constructor() {
         this.JSONSchema = {
-            modelname:{title:"", fileName:"", cell_ids:[]},
+            modelname:{title:"Title", description: "", fileName:"", cell_ids:[1]},
             author:{title:"Author", description: ""},
             dataset: {title: "Dataset", description:"", links:""},
             references: {title:"References", description: "", links:[]},
@@ -135,7 +135,7 @@ function readCells(content, new_color_map) {
             }
             if (id_count == -1 && flag) {
                 flag = false;
-                model_card.JSONSchema["modelname"]["title"] = cell['source'];
+                model_card.JSONSchema["modelname"]["description"] = cell['source'];
             }
             id_count += 1;
 

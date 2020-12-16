@@ -8,5 +8,6 @@ export const stages = new Map([
   ['preprocessing', 'Preprocessing'],
   ['hyperparameters', 'Hyperparameters'],
   ['modeltraining', 'Model Training'],
-  ['modelevaluation', 'Model Evaluation']
+  ['modelevaluation', 'Model Evaluation'],
+  ['misc', 'Ignore']
 ]);

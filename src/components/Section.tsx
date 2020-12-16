@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { UseSignal } from '@jupyterlab/apputils';
 import { Notebook } from '@jupyterlab/notebook';
 import { enableMapSet } from 'immer';
 import React, { useEffect } from 'react';
@@ -98,64 +97,42 @@ const SectionContent: React.FC<ISectionContent> = ({
   if (typeof sectionContent !== 'object') {
     return null;
   }
+  // TOOD should allow users to modify title
   return (
     <>
-      <>
-        {sectionName === 'modelname' ? (
-          <ReactMarkdown>{sectionContent.title}</ReactMarkdown>
-        ) : (
+      {sectionName === 'modelname' ? (
+        <ReactMarkdown>{sectionContent.description}</ReactMarkdown>
+      ) : (
+        <>
           <h1>
             {sectionContent.title} {quickFix}
           </h1>
-        )}
-      </>
-      <p>{sectionContent.description}</p>
-      <div style={{ display: 'block' }}>
-        {'cell_ids' in sectionContent &&
-        sectionContent.title !== 'misc' &&
-        sectionContent.cell_ids.length > 0 ? (
-          <Bar>
-            {sectionContent.cell_ids.map((cid: number, idx: number) => (
-              <VerticalLine
-                key={idx}
-                left={(cid / notebook.model.cells.length) * 100}
-                onClick={(): void => jumpToCell(notebook, cid)}
-              />
-            ))}
-          </Bar>
-        ) : // sectionContent.cell_ids.map((cid: number, idx: number) => (
-        //     <>
-        //       <Button
-        //         key={idx}
-        //         onClick={(): void => jumpToCell(notebook, cid)}
-        //       >
-        //         {cid}
-        //       </Button>
-        //       <DeleteOutlined
-        //         onClick={() => {
-        //           notebook.model.cells
-        //             .get(cid)
-        //             .metadata.set('stage', 'ignore');
-        //           updateData(draft => {
-        //             draft[sectionName]['cell_ids'] = draft[sectionName][
-        //               'cell_ids'
-        //             ].filter(item => item !== cid);
-        //           });
-        //         }}
-        //       />
-        //     </>
-        //   ))
-        null}
-      </div>
-      {'figures' in sectionContent
-        ? sectionContent.figures.map((src: string, idx: number) => (
-            <img
-              style={{ display: 'block' }}
-              key={idx}
-              src={`data:image/png;base64,${src}`}
-            />
-          ))
-        : null}
+          <ReactMarkdown>{sectionContent.description}</ReactMarkdown>
+          <div style={{ display: 'block' }}>
+            {'cell_ids' in sectionContent &&
+            sectionContent.cell_ids.length > 0 ? (
+              <Bar>
+                {sectionContent.cell_ids.map((cid: number, idx: number) => (
+                  <VerticalLine
+                    key={idx}
+                    left={(cid / notebook.model.cells.length) * 100}
+                    onClick={(): void => jumpToCell(notebook, cid)}
+                  />
+                ))}
+              </Bar>
+            ) : null}
+          </div>
+          {'figures' in sectionContent
+            ? sectionContent.figures.map((src: string, idx: number) => (
+                <img
+                  style={{ display: 'block' }}
+                  key={idx}
+                  src={`data:image/png;base64,${src}`}
+                />
+              ))
+            : null}
+        </>
+      )}
     </>
   );
 };
@@ -176,31 +153,37 @@ const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
         modelCard[key]['description'] = value.content;
       }
     });
+    console.log(modelCard);
     updateData(() => modelCard);
   }, [notebook]);
 
   return (
     <>
       {Object.entries(data).map(
-        ([sectionName, sectionContent]: [string, ISchemaItem], idx: number) => (
-          <SectionContent
-            key={idx}
-            notebook={notebook}
-            sectionName={sectionName}
-            sectionContent={sectionContent}
-            updateData={updateData}
-            quickFix={
-              <QuickFix
-                sectionName={sectionName}
-                sectionTitle={sectionContent.title}
-                annotMap={annotMap}
-                updateAnnotMap={updateAnnotMap}
-                notebook={notebook}
-                idx={getJumpIndex(sectionName, sectionContent)}
-              />
-            }
-          />
-        )
+        ([sectionName, sectionContent]: [string, ISchemaItem], idx: number) => {
+          if (sectionName === 'misc') {
+            return null;
+          }
+          return (
+            <SectionContent
+              key={idx}
+              notebook={notebook}
+              sectionName={sectionName}
+              sectionContent={sectionContent}
+              updateData={updateData}
+              quickFix={
+                <QuickFix
+                  sectionName={sectionName}
+                  sectionTitle={sectionContent.title}
+                  annotMap={annotMap}
+                  updateAnnotMap={updateAnnotMap}
+                  notebook={notebook}
+                  idx={getJumpIndex(sectionName, sectionContent)}
+                />
+              }
+            />
+          );
+        }
       )}
     </>
   );

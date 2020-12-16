@@ -1,6 +1,6 @@
 import { DownOutlined } from '@ant-design/icons';
 import { ReactWidget } from '@jupyterlab/apputils';
-import { Notebook, NotebookModel } from '@jupyterlab/notebook';
+import { Notebook } from '@jupyterlab/notebook';
 import { Button, Dropdown, Menu } from 'antd';
 import clone from 'lodash/clone';
 import React from 'react';
@@ -9,6 +9,8 @@ import { stages } from '../constants';
 interface IProps {
   notebook: Notebook;
 }
+// TODO regex is not perfect, check fuzzy match?
+const pattern = /(\[model card\] stage: )\w*(.*)/;
 
 const StageDropdown: React.FC<IProps> = ({ notebook }: IProps) => {
   const menu = (
@@ -18,7 +20,20 @@ const StageDropdown: React.FC<IProps> = ({ notebook }: IProps) => {
           key={idx}
           onClick={(): void => {
             notebook.activeCell.model.metadata.set('stage', stageId);
-            // console.log(notebook.activeCellIndex);
+            // comment as a visual hint
+            const text = notebook.activeCell.model.value.text;
+            const m = text.match(pattern);
+            if (m) {
+              notebook.activeCell.model.value.text = text.replace(
+                pattern,
+                `$1${stageName}$2`
+              );
+            } else {
+              notebook.activeCell.model.value.insert(
+                0,
+                `# [model card] stage: ${stageName}\n`
+              );
+            }
           }}
         >
           {stageName}
