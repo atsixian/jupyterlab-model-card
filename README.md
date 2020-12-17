@@ -2,6 +2,13 @@
 
 ![Github Actions Status](https://github.com/Deerhound579/jupyterlab-ext-tut/workflows/Build/badge.svg)
 
+
+## TO DO
+
+Merge main.js from my own model card repo with this repo.
+
+## How to Contribute
+
 To push to Grace branch:
 Run ```git branch -a``` to make sure you're on the right branch "grace".
 
