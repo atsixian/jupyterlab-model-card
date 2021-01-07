@@ -1,32 +1,26 @@
-# jupyterlab_apod
-
-![Github Actions Status](https://github.com/Deerhound579/jupyterlab-ext-tut/workflows/Build/badge.svg)
-
-random pic
-
-
+# jupyterlab-model-card
 
 ## Requirements
 
-* JupyterLab >= 2.0
+- JupyterLab >= 2.0
 
 ## Install
 
 ```bash
-jupyter labextension install jupyterlab-apod
+jupyter labextension install jupyterlab-model-card
 ```
 
-## Contributing
+## Development
 
 ### Install
 
 The `jlpm` command is JupyterLab's pinned version of
 [yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use
-`yarn` or `npm` in lieu of `jlpm` below.
+`yarn` or `npm` instead of `jlpm` below.
 
 ```bash
 # Clone the repo to your local environment
-# Move to jupyterlab_apod directory
+# Move to jupyterlab-model-card directory
 
 # Install dependencies
 jlpm
@@ -54,6 +48,5 @@ Now every change will be built locally and bundled into JupyterLab. Be sure to r
 ### Uninstall
 
 ```bash
-
-jupyter labextension uninstall jupyterlab-apod
+jupyter labextension uninstall jupyterlab-model-card
 ```
