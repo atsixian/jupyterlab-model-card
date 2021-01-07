@@ -11,3 +11,6 @@ export const stages = new Map([
   ['modelevaluation', 'Model Evaluation'],
   ['misc', 'Ignore']
 ]);
+
+export const startTag = (name: string): string => `<!-- @md-${name} -->`;
+export const endTag = (name: string): string => `<!-- /md-${name} -->`;

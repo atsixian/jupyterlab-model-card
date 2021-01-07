@@ -114,7 +114,6 @@ function readCells(content, new_color_map) {
     var notebookCode = "\n";
     var notebookMarkdown = "\n";
     const rewriter = new py.MagicsRewriter();
-    var currStage = "misc";
     let id_count = -1;
     let flag = true;
     let programbuilder = new py.ProgramBuilder();
@@ -124,6 +123,7 @@ function readCells(content, new_color_map) {
     // fs.mkdirSync("../example/" + model_card.JSONSchema["modelname"]["fileName"], { recursive: true })
 
     for (let cell of jsondata['cells']) {
+        let currStage = "misc";
         let sourceCode = "";
         if (cell['cell_type'] === 'markdown') {
             model_card.JSONSchema[currStage]["markdown"] += "\n" + cell['source'];
@@ -143,6 +143,7 @@ function readCells(content, new_color_map) {
             id_count += 1;
             var key = cell['execution_count'].toString();
             // user reclassification
+            debugger
             if (key in new_color_map) {
                 var stage = new_color_map[key];
                 const metadataStage = cell['metadata']['stage'];
@@ -150,9 +151,6 @@ function readCells(content, new_color_map) {
                 if ( metadataStage !== undefined && stages.has(metadataStage)) {
                     currStage = metadataStage;
                 }
-                // if (cell['metadata']['stage'] === 'ignore') {
-                //     currStage = 'misc'
-                // } 
                 else {
                     if (stage == "Data collection" || stage == "Data cleaning" || stage == "Data labelling") {
                         currStage = "datacleaning";

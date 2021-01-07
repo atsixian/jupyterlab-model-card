@@ -10,7 +10,7 @@ interface IProps {
   notebook: Notebook;
 }
 // TODO regex is not perfect, check fuzzy match?
-const pattern = /(\[model card\] stage: )\w*(.*)/;
+const pattern = /(\[model card\] stage: )[\w ]*(.*)/;
 
 const StageDropdown: React.FC<IProps> = ({ notebook }: IProps) => {
   const menu = (

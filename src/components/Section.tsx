@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import styled from 'styled-components';
 import { useImmer } from 'use-immer';
-import { stages } from '../constants';
+import { endTag, stages, startTag } from '../constants';
 import { generateModelCard } from '../lib/model-card-generator/main';
 import { AnnotMap, getAnnotMap } from '../util/mdExtractor';
 import { jumpToCell } from '../util/notebook_private';
@@ -97,42 +97,38 @@ const SectionContent: React.FC<ISectionContent> = ({
   if (typeof sectionContent !== 'object') {
     return null;
   }
-  // TOOD should allow users to modify title
   return (
     <>
-      {sectionName === 'modelname' ? (
+      <>
+        <h1>
+          {sectionContent.title} {quickFix}
+        </h1>
         <ReactMarkdown>{sectionContent.description}</ReactMarkdown>
-      ) : (
-        <>
-          <h1>
-            {sectionContent.title} {quickFix}
-          </h1>
-          <ReactMarkdown>{sectionContent.description}</ReactMarkdown>
-          <div style={{ display: 'block' }}>
-            {'cell_ids' in sectionContent &&
-            sectionContent.cell_ids.length > 0 ? (
-              <Bar>
-                {sectionContent.cell_ids.map((cid: number, idx: number) => (
-                  <VerticalLine
-                    key={idx}
-                    left={(cid / notebook.model.cells.length) * 100}
-                    onClick={(): void => jumpToCell(notebook, cid)}
-                  />
-                ))}
-              </Bar>
-            ) : null}
-          </div>
-          {'figures' in sectionContent
-            ? sectionContent.figures.map((src: string, idx: number) => (
-                <img
-                  style={{ display: 'block' }}
+        <div style={{ display: 'block' }}>
+          {sectionName !== 'modelname' &&
+          'cell_ids' in sectionContent &&
+          sectionContent.cell_ids.length > 0 ? (
+            <Bar>
+              {sectionContent.cell_ids.map((cid: number, idx: number) => (
+                <VerticalLine
                   key={idx}
-                  src={`data:image/png;base64,${src}`}
+                  left={(cid / notebook.model.cells.length) * 100}
+                  onClick={(): void => jumpToCell(notebook, cid)}
                 />
-              ))
-            : null}
-        </>
-      )}
+              ))}
+            </Bar>
+          ) : null}
+        </div>
+        {'figures' in sectionContent
+          ? sectionContent.figures.map((src: string, idx: number) => (
+              <img
+                style={{ display: 'block' }}
+                key={idx}
+                src={`data:image/png;base64,${src}`}
+              />
+            ))
+          : null}
+      </>
     </>
   );
 };
@@ -145,7 +141,6 @@ const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
     // console.log('updated map', amap);
     const amap = getAnnotMap(notebook);
     console.log(amap);
-    updateAnnotMap(() => amap);
     const modelCard: any = generateModelCard(notebook.model.toJSON());
 
     amap.forEach((value, key) => {
@@ -153,8 +148,23 @@ const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
         modelCard[key]['description'] = value.content;
       }
     });
-    console.log(modelCard);
     updateData(() => modelCard);
+
+    // Add tag for title field
+    const titleKey = 'modelname';
+    if (
+      modelCard[titleKey]['description'] !== undefined &&
+      !annotMap.has(titleKey)
+    ) {
+      const titleCell = notebook.model.cells.get(0).value;
+      titleCell.insert(0, `${startTag(titleKey)}\n`);
+      titleCell.insert(titleCell.text.length, `\n${endTag(titleKey)}`);
+      amap.set(titleKey, {
+        idx: 0,
+        content: modelCard[titleKey]['description']
+      });
+    }
+    updateAnnotMap(() => amap);
   }, [notebook]);
 
   return (
