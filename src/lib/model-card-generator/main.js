@@ -11,6 +11,7 @@
 
 var py = require("modified-python-program-analysis/dist/es5");
 var graphing = require("./Graph.js").Graph;
+var stages = require("../../constants").stages;
 // var fs = require('fs');
 // var path = require('path');
 var ic = require("./infocell");
@@ -25,11 +26,11 @@ var countLines = 0;
 class ModelCard {
     constructor() {
         this.JSONSchema = {
-            modelname:{title:"", fileName:"", cell_ids:[]},
-            author:{title:"Author"},
+            modelname:{title:"Title", description: "", fileName:"", cell_ids:[1]},
+            author:{title:"Author", description: ""},
             dataset: {title: "Dataset", description:"", links:""},
-            references: {title:"References", links:[]},
-            libraries:{title:"Libraries Used", lib:[]},
+            references: {title:"References", description: "", links:[]},
+            libraries:{title:"Libraries Used", description: "", lib:[]},
             plotting:{title:"Plotting", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
             datacleaning:{title:"Data Cleaning", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
             preprocessing:{title:"Preprocessing", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
@@ -113,17 +114,16 @@ function readCells(content, new_color_map) {
     var notebookCode = "\n";
     var notebookMarkdown = "\n";
     const rewriter = new py.MagicsRewriter();
-    var currStage = "misc";
     let id_count = -1;
     let flag = true;
     let programbuilder = new py.ProgramBuilder();
     // model_card.JSONSchema["modelname"]["fileName"] = filePath.split("/").slice(-1).toString();
-    // TODO get name for the file with docManager
-    model_card.JSONSchema["modelname"]["fileName"] = "hello";
+    // model_card.JSONSchema["modelname"]["fileName"] = "hello";
     // console.log();
     // fs.mkdirSync("../example/" + model_card.JSONSchema["modelname"]["fileName"], { recursive: true })
 
     for (let cell of jsondata['cells']) {
+        let currStage = "misc";
         let sourceCode = "";
         if (cell['cell_type'] === 'markdown') {
             model_card.JSONSchema[currStage]["markdown"] += "\n" + cell['source'];
@@ -135,36 +135,44 @@ function readCells(content, new_color_map) {
             }
             if (id_count == -1 && flag) {
                 flag = false;
-                model_card.JSONSchema["modelname"]["title"] = cell['source'];
+                model_card.JSONSchema["modelname"]["description"] = cell['source'];
             }
             id_count += 1;
 
         } else if (cell['source'][0] != undefined){
             id_count += 1;
             var key = cell['execution_count'].toString();
+            // user reclassification
+            debugger
             if (key in new_color_map) {
                 var stage = new_color_map[key];
-                if (stage == "Data collection" || stage == "Data cleaning" || stage == "Data labelling") {
-                    currStage = "datacleaning";
-                } else if (stage == "Feature Engineering") {
-                    currStage = "preprocessing";
-                } else if (stage == "Training") {
-                    currStage = "modeltraining";
-                } else if (stage == "Evaluation") {
-                    currStage = "modelevaluation";
-                } else if (stage == "Plotting") {
-                    currStage = "plotting";
+                const metadataStage = cell['metadata']['stage'];
+                // user reclassification
+                if ( metadataStage !== undefined && stages.has(metadataStage)) {
+                    currStage = metadataStage;
+                }
+                else {
+                    if (stage == "Data collection" || stage == "Data cleaning" || stage == "Data labelling") {
+                        currStage = "datacleaning";
+                    } else if (stage == "Feature Engineering") {
+                        currStage = "preprocessing";
+                    } else if (stage == "Training") {
+                        currStage = "modeltraining";
+                    } else if (stage == "Evaluation") {
+                        currStage = "modelevaluation";
+                    } else if (stage == "Plotting") {
+                        currStage = "plotting";
+                    }
                 }
             }
-
-            for (let line of cell['source']) {
+            const cells = cell['source'].split('\n');
+            for (let line of cells) {
                 if (line[0] === "%") {
                     line = rewriter.rewriteLineMagic(line);
-                    line = '#' + line;
                 }
                 countLines += 1;
                 model_card.JSONSchema[currStage]["lineNumbers"].push(countLines);
-                sourceCode += line;
+                sourceCode += line + '\n';
             }
             notebookCode += sourceCode + '\n';
             let code_cell = createCell(sourceCode, cell['execution_count'], cell['outputs'][0]);

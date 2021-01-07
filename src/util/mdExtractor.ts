@@ -18,6 +18,7 @@ export const getAnnotMap = (nb: Notebook): AnnotMap => {
   each(nb.model.cells, (cell, idx) => {
     if (cell.type === 'markdown') {
       m = cell.value.text.match(start);
+      debugger;
       contentMatch = cell.value.text.match(content);
       if (m) {
         annotMap.set(m[1], { idx, content: contentMatch[1] });
