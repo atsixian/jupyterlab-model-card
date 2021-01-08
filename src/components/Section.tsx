@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Notebook } from '@jupyterlab/notebook';
+import { PathExt } from '@jupyterlab/coreutils';
+import { IDocumentManager } from '@jupyterlab/docmanager';
+import { DocumentRegistry } from '@jupyterlab/docregistry';
+import { INotebookModel, Notebook } from '@jupyterlab/notebook';
 import { Button } from 'antd';
 import { enableMapSet } from 'immer';
 import React, { useEffect } from 'react';
@@ -8,6 +11,7 @@ import styled from 'styled-components';
 import { useImmer } from 'use-immer';
 import { endTag, stages, startTag } from '../constants';
 import { generateModelCard } from '../lib/model-card-generator/main';
+import { generateMarkdown } from '../util';
 import { AnnotMap, getAnnotMap } from '../util/mdExtractor';
 import { jumpToCell } from '../util/notebook_private';
 import QuickFix from './QuickFix';
@@ -16,20 +20,22 @@ enableMapSet();
 
 interface ISectionProps {
   notebook: Notebook;
+  context: DocumentRegistry.IContext<INotebookModel>;
+  docManager: IDocumentManager;
 }
 
 /** Items in the generated model card */
-interface ISchemaItem {
+export interface ISchemaItem {
   /** title of the section */
   title: string;
   /** customized description */
   description: string;
 }
-interface ISchemaStageItem extends ISchemaItem {
+export interface ISchemaStageItem extends ISchemaItem {
   cell_ids: number[];
   figures: string[];
 }
-interface ISchema {
+export interface ISchema {
   modelname: { title: string };
   author: ISchemaItem;
   dataset: ISchemaItem;
@@ -48,7 +54,6 @@ interface ISectionContent {
   sectionName: string;
   sectionContent: ISchemaItem | ISchemaStageItem;
   quickFix: React.ReactNode;
-  updateData: Function;
 }
 
 const getJumpIndex = (sectionName: string, sectionContent: any): number => {
@@ -92,8 +97,7 @@ const SectionContent: React.FC<ISectionContent> = ({
   notebook,
   sectionName,
   sectionContent,
-  quickFix,
-  updateData
+  quickFix
 }: ISectionContent) => {
   if (typeof sectionContent !== 'object') {
     return null;
@@ -121,27 +125,33 @@ const SectionContent: React.FC<ISectionContent> = ({
           ) : null}
         </div>
         {'figures' in sectionContent
-          ? sectionContent.figures.map((src: string, idx: number) => (
-              <img
-                style={{ display: 'block' }}
-                key={idx}
-                src={`data:image/png;base64,${src}`}
-              />
-            ))
+          ? sectionContent.figures.map((src: string, idx: number) => {
+              // console.log(sectionName + ' ' + sectionContent.figures.length);
+              return (
+                <img
+                  style={{ display: 'block' }}
+                  key={idx}
+                  src={`data:image/png;base64,${src}`}
+                />
+              );
+            })
           : null}
       </>
     </>
   );
 };
 
-const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
+const Section: React.FC<ISectionProps> = ({
+  notebook,
+  context,
+  docManager
+}: ISectionProps) => {
   const [annotMap, updateAnnotMap] = useImmer<AnnotMap>(new Map());
   const [data, updateData] = useImmer<ISchema>({} as ISchema);
 
   useEffect(() => {
-    // console.log('updated map', amap);
     const amap = getAnnotMap(notebook);
-    console.log(amap);
+    // console.log(amap);
     const modelCard: any = generateModelCard(notebook.model.toJSON());
 
     amap.forEach((value, key) => {
@@ -168,19 +178,30 @@ const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
     updateAnnotMap(() => amap);
   }, [notebook]);
 
+  // TODO let user decide the name of the output file
+  // TODO test for files in a subdirectory
   return (
     <>
-      <div
-        style={{ position: 'absolute', top: 10, right: 10, overflow: 'hidden' }}
+      <Button
+        type="primary"
+        style={{ position: 'sticky', top: 10, float: 'right' }}
+        onClick={(): any => {
+          const dirname = PathExt.dirname(context.path);
+          const filePath = PathExt.join(dirname, 'ModelCard.md');
+
+          let mdFile: any = docManager.findWidget(filePath);
+          if (mdFile === undefined) {
+            // create the file in the same directory as the notebook
+            mdFile = docManager.createNew(filePath);
+          }
+          docManager.openOrReveal(mdFile.context.path);
+          mdFile.context.ready.then(() => {
+            mdFile.content.model.value.text = generateMarkdown(data);
+          });
+        }}
       >
-        <Button
-          type="primary"
-          style={{ position: 'sticky', top: 10 }}
-          onClick={() => console.log(data)}
-        >
-          Export to MD
-        </Button>
-      </div>
+        Export to MD
+      </Button>
       {Object.entries(data).map(
         ([sectionName, sectionContent]: [string, ISchemaItem], idx: number) => {
           if (sectionName === 'misc') {
@@ -192,7 +213,6 @@ const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
               notebook={notebook}
               sectionName={sectionName}
               sectionContent={sectionContent}
-              updateData={updateData}
               quickFix={
                 <QuickFix
                   sectionName={sectionName}

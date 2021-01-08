@@ -1,12 +1,13 @@
-import { INotebookModel, NotebookPanel } from '@jupyterlab/notebook';
-import { StackedPanel, Widget } from '@lumino/widgets';
+import { JupyterFrontEnd } from '@jupyterlab/application';
+import { ToolbarButton } from '@jupyterlab/apputils';
+import { IDocumentManager } from '@jupyterlab/docmanager';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
-import { IDisposable, DisposableDelegate } from '@lumino/disposable';
+import { INotebookModel, NotebookPanel } from '@jupyterlab/notebook';
+import { Popup } from '@jupyterlab/statusbar';
+import { DisposableDelegate, IDisposable } from '@lumino/disposable';
+import { StackedPanel } from '@lumino/widgets';
 import { ModelCardWidget } from './components/ModelCardWidget';
 import { PopupWidget } from './components/PopupWidget';
-import { ToolbarButton } from '@jupyterlab/apputils';
-import { Popup } from '@jupyterlab/statusbar';
-import { JupyterFrontEnd } from '@jupyterlab/application';
 import {
   commandCreate,
   commandModifyStage,
@@ -19,10 +20,12 @@ export class ModelCardPanel extends StackedPanel
   private _button: ToolbarButton;
   private _popup: PopupWidget;
   readonly _app: JupyterFrontEnd;
+  readonly _docManager: IDocumentManager;
 
-  constructor(app: JupyterFrontEnd) {
+  constructor(app: JupyterFrontEnd, docManager: IDocumentManager) {
     super();
     this._app = app;
+    this._docManager = docManager;
     this.id = modelCardWidgetID;
     this.title.label = 'Model Card';
     this.title.closable = true;
@@ -41,7 +44,7 @@ export class ModelCardPanel extends StackedPanel
     const callback = (): void => {
       // console.log(context.model.toJSON());
       // !This ensures our view is synced with model data
-      this._view.updateModel(panel.content);
+      this._view.updateModel(panel);
       this._app.commands.execute(commandCreate);
     };
     this._button = new ToolbarButton({
@@ -55,7 +58,7 @@ export class ModelCardPanel extends StackedPanel
 
     // create the frontend view after the context is ready
     context.ready.then(() => {
-      this._view = new ModelCardWidget(panel.content);
+      this._view = new ModelCardWidget(panel, this._docManager);
       this._popup = new PopupWidget(panel.content);
       this.addWidget(this._view);
     });

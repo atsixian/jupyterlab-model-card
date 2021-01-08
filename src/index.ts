@@ -9,7 +9,7 @@ import { INotebookTracker } from '@jupyterlab/notebook';
 import { commandCreate } from './constants';
 import { ModelCardPanel } from './panel';
 
-// TODO Add key binding for the command
+// TODO Add key binding for the command?
 /**
  * Initialization data for the react-widget extension.
  */
@@ -26,8 +26,7 @@ const extension: JupyterFrontEndPlugin<void> = {
     app: JupyterFrontEnd,
     palette: ICommandPalette,
     restorer: ILayoutRestorer,
-    docManager: IDocumentManager,
-    notebookTracker: INotebookTracker
+    docManager: IDocumentManager
   ) => {
     // Create a new widget
     // const command = CommandIDs.create;
@@ -35,8 +34,7 @@ const extension: JupyterFrontEndPlugin<void> = {
 
     async function createPanel(): Promise<ModelCardPanel> {
       if (!widget) {
-        widget = new ModelCardPanel(app); // add docManager here
-        // widget = new MainAreaWidget<CounterWidget>({ content });
+        widget = new ModelCardPanel(app, docManager);
       }
       if (!tracker.has(widget)) {
         tracker.add(widget);
