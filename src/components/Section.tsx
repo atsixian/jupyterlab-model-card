@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Notebook } from '@jupyterlab/notebook';
+import { Button } from 'antd';
 import { enableMapSet } from 'immer';
 import React, { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -154,7 +155,7 @@ const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
     const titleKey = 'modelname';
     if (
       modelCard[titleKey]['description'] !== undefined &&
-      !annotMap.has(titleKey)
+      !amap.has(titleKey)
     ) {
       const titleCell = notebook.model.cells.get(0).value;
       titleCell.insert(0, `${startTag(titleKey)}\n`);
@@ -169,6 +170,17 @@ const Section: React.FC<ISectionProps> = ({ notebook }: ISectionProps) => {
 
   return (
     <>
+      <div
+        style={{ position: 'absolute', top: 10, right: 10, overflow: 'hidden' }}
+      >
+        <Button
+          type="primary"
+          style={{ position: 'sticky', top: 10 }}
+          onClick={() => console.log(data)}
+        >
+          Export to MD
+        </Button>
+      </div>
       {Object.entries(data).map(
         ([sectionName, sectionContent]: [string, ISchemaItem], idx: number) => {
           if (sectionName === 'misc') {

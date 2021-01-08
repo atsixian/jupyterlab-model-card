@@ -143,7 +143,6 @@ function readCells(content, new_color_map) {
             id_count += 1;
             var key = cell['execution_count'].toString();
             // user reclassification
-            debugger
             if (key in new_color_map) {
                 var stage = new_color_map[key];
                 const metadataStage = cell['metadata']['stage'];
