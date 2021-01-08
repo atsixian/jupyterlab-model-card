@@ -7,9 +7,9 @@
     "jupyterlab",
     "jupyterlab-extension"
   ],
-  "homepage": "https://github.com/Deerhound579/jupyterlab-ext-tut",
+  "homepage": "https://github.com/Deerhound579/jupyterlab-model-card",
   "bugs": {
-    "url": "https://github.com/Deerhound579/jupyterlab-ext-tut/issues"
+    "url": "https://github.com/Deerhound579/jupyterlab-model-card/issues"
   },
   "license": "BSD-3-Clause",
   "author": "Sixian",
