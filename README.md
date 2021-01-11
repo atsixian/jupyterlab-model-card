@@ -12,6 +12,8 @@ jupyter labextension install jupyterlab-model-card
 
 ## Development
 
+### [Resources for extension development](https://www.notion.so/3e617d2f2d56464a8c8f7f19890c36e7?v=61474bad874443b39e8925d47401b790)
+
 ### Install
 
 The `jlpm` command is JupyterLab's pinned version of

@@ -4,9 +4,8 @@
 
 ## Plotting
 
-This is plotting content hello
+This is plotting content
 
-## Data Cleaning
 <img alt="figure0" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAV0AAAD8CAYAAADUv3dIAAAABHNCSVQICAgIfAhkiAAAAAlwSFlz
 AAALEgAACxIB0t1+/AAAIABJREFUeJzt3Xd4HNXVx/Hv2aLdVZfcewPLGGNjisHB4BAwHYEpoYWY
 FiC09IQUEhISEieUlx46hOIASQg1hE7AgGkGGxeBjXuVZSRLq7blvn/ckbUWki3L0s6W83meebbv
