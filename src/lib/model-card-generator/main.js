@@ -11,6 +11,10 @@ var ic = require("./infocell");
 var dep = require("./cell_deps.js");
 var countLines = 0;
 
+//const BULK_RUN_PATH = "../tests/notebooks/";       //const BULK_RUN_PATH = "../assets/"
+const SCHEMAS_PATH = "/../lale/sklearn/";
+//const MODEL_CARDS_PATH = "../assets/model_cards/";
+
 
 class ModelCard {
     constructor() {
@@ -20,7 +24,7 @@ class ModelCard {
             datasets: {title: "Datasets", description:"", links:"", cell_ids:[]},
             references: {title:"References", source:"", links:[], cell_ids:[]},
             libraries:{title:"Libraries Used", lib:{}, info:{}, cell_ids:[]},
-            hyperparameters:{title:"Hyperparameters", cell_ids:[], lineNumbers:[], source:"", values:[]},
+            hyperparameters:{title:"Hyperparameters", cell_ids:[], lineNumbers:[], source:"", values:[], description:""},
             misc:{title:"Miscellaneous", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
             plotting:{title:"Plotting", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
             datacleaning:{title:"Data Cleaning", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
@@ -56,7 +60,6 @@ class ModelCard {
     }
 }
 
-
 function createCell(text, executionCount, output) {
     return new ic.InfoCell(text, executionCount, output);
 }
@@ -70,7 +73,7 @@ function convertColorToLabel(content) {
     // evaluation -> orange
     // model deployment -> pink
 
-    var color_map = dep.printLabels(filePath);
+    var color_map = dep.printLabels(content);
 
     //var colourFile = fs.readFileSync(path.resolve(__dirname, filePath.split(".ipynb")[0] + "_deps_and_labels_new.txt"), "utf8");
     var mapObj = {red:"Data collection",yellow:"Data cleaning",
@@ -91,7 +94,7 @@ function convertColorToLabel(content) {
     }
 
 
-    const testFolder = '/../lale/sklearn/';
+    const testFolder = SCHEMAS_PATH;
     var schemas = {};
     var filenames = fs.readdirSync(__dirname + testFolder);
     filenames.forEach(file => {
@@ -99,22 +102,28 @@ function convertColorToLabel(content) {
         newname = newname.replace(".py", "");
         schemas[newname] = file;
     });
-    model_card.hyperparamschemas = schemas;
 
-    return new_color_map;
+
+    return [new_color_map, schemas];
 }
 
-function readCells(content, new_color_map) {
+function readCells(content) {
     // ## Section  in Markdown
     // var contents = fs.readFileSync(path.resolve(__dirname, filePath));
     // let jsondata = JSON.parse(content);
     const model_card = new ModelCard();
+
+    var temp_res = convertColorToLabel(content);
+    var new_color_map = temp_res[0];
+    model_card.hyperparamschemas = temp_res[1];
+
     let jsondata = JSON.parse(content);
     var notebookCode = "\n";
     var notebookMarkdown = "";
     const rewriter = new py.MagicsRewriter();
     var currStage = "misc";
     let id_count = 0;
+    let flag = true;
     let programbuilder = new py.ProgramBuilder();
     model_card.JSONSchema["modelname"]["Filename"] = filePath.split("/").slice(-1).toString();
     //console.log();
@@ -131,7 +140,8 @@ function readCells(content, new_color_map) {
                     model_card.JSONSchema["references"]["links"] = model_card.JSONSchema["references"]["links"].concat(matches);
                 }
             }
-            if (id_count == 0) {
+            if (id_count == 0 && flag) {
+                flag = false;
                 model_card.JSONSchema["modelname"]["title"] = cell['source'][0];
                 model_card.JSONSchema["modelname"]["cell_ids"] = id_count;
             }
@@ -157,9 +167,9 @@ function readCells(content, new_color_map) {
             }
 
             for (let line of cell['source']) {
-                if (line[0] === "%") {
+                if (line[0] === "%" || line[0] === "!") {
                     line = rewriter.rewriteLineMagic(line);
-
+                    line = '#' + line;
                 }
                 countLines += 1;
                 model_card.JSONSchema[currStage]["lineNumbers"].push(countLines);
@@ -168,14 +178,12 @@ function readCells(content, new_color_map) {
             }
             notebookCode += sourceCode + '\n';
             let code_cell = createCell(sourceCode, cell['execution_count'], cell['outputs'][0]);
-            //console.log(ic.printInfoCell(code_cell));
-            //console.log("OUTPUT: ", cell["outputs"]);
+
             if (cell["outputs"].length != 0) {
                 for (let output in cell["outputs"]) {
-                    //model_card.outputs[code_cell.persistentId] += output;
                     if (cell["outputs"][output]['output_type'] == 'display_data') {
                         var bitmap = new Buffer.from(cell["outputs"][output]['data']['image/png'], 'base64');
-                        fs.writeFileSync(__dirname + "/../example/" + model_card.JSONSchema["modelname"]["Filename"] + "/" + code_cell.persistentId + ".jpg", bitmap);
+                        //fs.writeFileSync(__dirname + "/../example/" + model_card.JSONSchema["modelname"]["Filename"] + "/" + code_cell.persistentId + ".jpg", bitmap);
                         var image = "![Hello World](data:image/png;base64," + cell["outputs"][output]['data']['image/png'];
                         model_card.JSONSchema[currStage]["figures"].push(code_cell.persistentId + ".jpg");
                     } else if (cell["outputs"][output]['output_type'] == 'stream') {
@@ -185,19 +193,14 @@ function readCells(content, new_color_map) {
                 }
             }
 
-            programbuilder.add(code_cell)
             model_card.JSONSchema[currStage]["cells"] += code_cell;
-            //console.log(code_cell);
-            //console.log(model_card.JSONSchema[currStage]["cells"]);
             model_card.JSONSchema[currStage]["source"] += sourceCode;
             model_card.JSONSchema[currStage]["cell_ids"].push(id_count);
         }
     }
-    // id_count = persistentId
-    //let code = programbuilder.buildTo("id" + id_count.toString()).text;
+
     model_card.markdown += notebookMarkdown;
     printLineDefUse(notebookCode, model_card);
-    //return [notebookCode, notebookMarkdown, model_card];
     return model_card.JSONSchema;
 }
 
@@ -234,16 +237,30 @@ function printLineDefUse(code, model_card){
 
             //Check Hyperparameters
             var input = fromNode[0].toLowerCase();
-            var match = "";
+            var hyperparam_descriptions = {};
 
             Object.keys(model_card.hyperparamschemas).forEach(function(key) {
                 if (input.includes(key)) {
-                    console.log("MATCH!");
-                    var hcontents = fs.readFileSync(__dirname + "/../lale/sklearn/" + model_card.hyperparamschemas[key], "utf8");
+                    var hcontents = fs.readFileSync(__dirname + SCHEMAS_PATH + model_card.hyperparamschemas[key], "utf8");
                     var hflag = false;
+                    var pflag = false;
+                    var hyperflag = false
                     var hyperparams = "";
+                    var hproperties = "";
+                    var openbrackets = 0;
+
                     for (let hline of hcontents.split("\n")) {
-                        //console.log(line);
+                        if (hline.includes("_hyperparams_schema =")) {
+                            hyperflag = true;
+                        }
+                        if (hyperflag) {
+                            if (hline.includes("'properties':")) {
+                                pflag = true;
+                            }
+                            openbrackets += (hline.match(/{/g)||[]).length
+                            openbrackets -= (hline.match(/}/g)||[]).length
+                        }
+
                         if (hline.includes("relevantToOptimizer")) {
                             hflag = true;
                         }
@@ -253,7 +270,14 @@ function printLineDefUse(code, model_card){
                         if (hline.includes("],")) {
                             hflag = false;
                         }
+                        if (pflag == true && hyperflag == true) {
+                            hproperties = hproperties + hline + "\n";
+                        }
+                        if (hyperflag && openbrackets == 0) {
+                            break;
+                        }
                     }
+
                     hyperparams = hyperparams.substr(hyperparams.indexOf('[')+1);
                     hyperparams = hyperparams.split("]")[0];
                     hyperparams = hyperparams.split(",");
@@ -265,10 +289,54 @@ function printLineDefUse(code, model_card){
                             parameters.push(s);
                         }
                     }
-                    model_card.JSONSchema["hyperparameters"]["values"].concat(parameters);
+
+                    pflag = false;
+                    openbrackets=0;
+                    var desc = "";
+                    var substring = null;
+                    var param = "";
+
+                    function containsAny(str, substrings) {
+                        for (var i = 0; i != substrings.length; i++) {
+                            var substring = "'" + substrings[i] + "'";
+                            if (str.indexOf(substring) != - 1) {
+                                return substring;
+                            }
+                        }
+                        return null;
+                    }
+
+
+                    for (let line of hproperties.split("\n")) {
+                        if (!pflag) {
+                            substring = containsAny(line, parameters);
+                            if (substring != null) {
+                                pflag = true;
+                                param = substring;
+                            }
+                        }
+                        if (pflag) {
+                            if (line.includes("{")) {
+                                openbrackets += 1;
+                            }
+                            if (line.includes("}")) {
+                                openbrackets -=1;
+                            }
+                            desc = desc + line + "\n";
+
+                            if (openbrackets <= 0) {
+                                pflag = false;
+                                hyperparam_descriptions[input] += desc;
+                                desc = "";
+                            }
+
+                        }
+                    }
+                    model_card.JSONSchema["hyperparameters"]["values"] += parameters;
                     model_card.JSONSchema["hyperparameters"]["lineNumbers"].push(flow.fromNode.location.first_line);
                     model_card.JSONSchema["hyperparameters"]["cell_ids"].push(model_card.line_to_cell[flow.fromNode.location.first_line]);
-                    model_card.JSONSchema["hyperparameters"]["source"] += fromNode[0];
+                    model_card.JSONSchema["hyperparameters"]["source"] += fromNode[0] + "\n";
+                    model_card.JSONSchema["hyperparameters"]["description"] = hyperparam_descriptions;
                 }
             });
 
@@ -310,8 +378,6 @@ function findImportScope(importScope, lineToCode, numgraph, model_card) {
     for (let lineNum of importCode) {
         var result = numgraph.findLongestPathSrc(numgraph.edge.length, parseInt(lineNum))
         scopes[lineNum] = result[1];
-        //console.log(lineToCode[lineNum]);
-        //console.log("START: ", lineNum.toString(), " END: ", scopes[lineNum]);
         imports[lineToCode[lineNum]] = "START:" + lineNum.toString() + "\t" + " END:" + scopes[lineNum];
 
         if (model_card.getDCLineNumbers().includes(parseInt(lineNum))) {
@@ -325,13 +391,11 @@ function findImportScope(importScope, lineToCode, numgraph, model_card) {
         }
 
     }
-    //console.log(model_card.JSONSchema["preprocessing"]["imports"]);
     generateLibraryInfo(imports);
 }
 
 function generateLibraryInfo(imports) {
     let library_defs = JSON.parse(fs.readFileSync(__dirname + "/../assets/library_defs.json"));
-    //console.log("## Libraries Used ##");
     var libraries = {"pandas":[], "numpy":[], "matplotlib":[], "sklearn":[], "tensorflow":[], "pytorch":[], "OTHER":[]};
 
     for (let im of Object.keys(imports)) {
@@ -353,13 +417,13 @@ function generateLibraryInfo(imports) {
     }
     model_card.JSONSchema["libraries"]["lib"] = libraries;
     model_card.JSONSchema["libraries"]["info"] = library_defs;
-    //console.log(library_defs);
 
 }
 
 
-function generateMarkdown(model_card, notebookCode, markdown_contents) {
+function generateMarkdown(model_card, notebookCode) {
 
+    var markdown_contents = "";
     var keys = Object.keys( model_card.JSONSchema );
 
     for( var i = 0,length = keys.length; i < length; i++ ) {
@@ -406,7 +470,6 @@ function generateMarkdown(model_card, notebookCode, markdown_contents) {
  */
 export function generateModelCard(content) {
     debugger
-    var new_color = convertColorToLabel(content);
-    const res = readCells(content, new_color);
+    const res = readCells(content);
     return res;
 }
