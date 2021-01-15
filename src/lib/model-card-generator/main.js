@@ -1,12 +1,6 @@
 "use strict";
 // exports.__esModule = true;
 
-
-/**
- * Want markdown cells to have IDs
- * Want to add cell_ids for provenance of everything
- * **/
-
 // COMMAND: node main.js ../assets/News_Categorization_MNB.ipynb
 
 var py = require("modified-python-program-analysis/dist/es5");
@@ -16,37 +10,43 @@ var stages = require("../../constants").stages;
 // var path = require('path');
 var ic = require("./infocell");
 var dep = require("./cell_deps.js");
-
-
-// var args = process.argv.slice(2);
-// var filePath = args[0];
 var countLines = 0;
+
+//const BULK_RUN_PATH = "../tests/notebooks/";       //const BULK_RUN_PATH = "../assets/"
+const SCHEMAS_PATH = "/../lale/sklearn/";
+//const MODEL_CARDS_PATH = "../assets/model_cards/";
 
 
 class ModelCard {
     constructor() {
         this.JSONSchema = {
-            modelname:{title:"Title", description: "", fileName:"", cell_ids:[1]},
-            author:{title:"Author", description: ""},
-            dataset: {title: "Dataset", description:"", links:""},
-            references: {title:"References", description: "", links:[]},
-            libraries:{title:"Libraries Used", description: "", lib:[]},
-            plotting:{title:"Plotting", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
-            datacleaning:{title:"Data Cleaning", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
-            preprocessing:{title:"Preprocessing", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
-            hyperparameters:{title:"Hyperparameters", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", values:""},
-            modeltraining:{title:"Model Training", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
-            modelevaluation:{title:"Evaluation", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]},
+            modelname:{title:"", Filename:"", cell_ids:[]},
+            author:{title:"Author"},
+            datasets: {title: "Datasets", description:"", links:"", cell_ids:[]},
+            references: {title:"References", source:"", links:[], cell_ids:[]},
+            libraries:{title:"Libraries Used", lib:{}, info:{}, cell_ids:[]},
+            hyperparameters:{title:"Hyperparameters", cell_ids:[], lineNumbers:[], source:"", values:[], description:""},
+            misc:{title:"Miscellaneous", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
+            plotting:{title:"Plotting", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
+            datacleaning:{title:"Data Cleaning", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
+            preprocessing:{title:"Preprocessing", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
+            modeltraining:{title:"Model Training", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
+            modelevaluation:{title:"Evaluation", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
             misc:{title:"Miscellaneous", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]}
         }
-        this.markdown = [];
+        this.line_to_cell = {};
+        this.markdown = "";
         this.intended_use = "";
         this.ethical_considerations = "";
         this.developer_comments = "";
+        this.hyperparamschemas = {};
     }
 
     getStageLineNumbers(stage_name) {
         return this.JSONSchema[stage_name]["lineNumbers"];
+    }
+    getPLineNumbers() {
+        return this.JSONSchema["plotting"]["lineNumbers"];
     }
     getDCLineNumbers() {
         return this.JSONSchema["datacleaning"]["lineNumbers"];
@@ -61,7 +61,6 @@ class ModelCard {
         return this.JSONSchema["modelevaluation"]["lineNumbers"];
     }
 }
-
 
 function createCell(text, executionCount, output) {
     return new ic.InfoCell(text, executionCount, output);
@@ -88,12 +87,6 @@ function convertColorToLabel(content) {
         return mapObj[matched];
     });
 
-    // fs.writeFile((__dirname + "/../assets/" + filePath.split(".ipynb")[0] + '_labels.txt'), color_map,
-    //     function (err) {
-    //         if (err) throw err;
-    //         console.log('Labels file saved!');
-    //     });
-
     color_map = color_map.split("\n");
     var new_color_map = {};
 
@@ -102,25 +95,40 @@ function convertColorToLabel(content) {
         new_color_map[element[0]] = element[1];
     }
 
-    return new_color_map;
+
+    const testFolder = SCHEMAS_PATH;
+    var schemas = {};
+    var filenames = fs.readdirSync(__dirname + testFolder);
+    filenames.forEach(file => {
+        var newname = file.replace("_", "");
+        newname = newname.replace(".py", "");
+        schemas[newname] = file;
+    });
+
+
+    return [new_color_map, schemas];
 }
 
-function readCells(content, new_color_map) {
+function readCells(content) {
     // ## Section  in Markdown
     // var contents = fs.readFileSync(path.resolve(__dirname, filePath));
     // let jsondata = JSON.parse(content);
     const model_card = new ModelCard();
-    let jsondata = content;
+
+    var temp_res = convertColorToLabel(content);
+    var new_color_map = temp_res[0];
+    model_card.hyperparamschemas = temp_res[1];
+
+    let jsondata = JSON.parse(content);
     var notebookCode = "\n";
-    var notebookMarkdown = "\n";
+    var notebookMarkdown = "";
     const rewriter = new py.MagicsRewriter();
-    let id_count = -1;
+    var currStage = "misc";
+    let id_count = 0;
     let flag = true;
-    let programbuilder = new py.ProgramBuilder();
-    // model_card.JSONSchema["modelname"]["fileName"] = filePath.split("/").slice(-1).toString();
-    // model_card.JSONSchema["modelname"]["fileName"] = "hello";
-    // console.log();
-    // fs.mkdirSync("../example/" + model_card.JSONSchema["modelname"]["fileName"], { recursive: true })
+    //model_card.JSONSchema["modelname"]["Filename"] = filePath.split("/").slice(-1).toString();
+    //console.log();
+    //fs.mkdirSync("../example/" + model_card.JSONSchema["modelname"]["Filename"], { recursive: true })
 
     for (let cell of jsondata['cells']) {
         let currStage = "misc";
@@ -130,14 +138,17 @@ function readCells(content, new_color_map) {
             for (let mdline of cell['source']) {
                 var matches = mdline.match(/\bhttps?:\/\/[\S][^)]+/gi);
                 if (matches !== null) {
+                    model_card.JSONSchema["references"]["cell_ids"].push(id_count);
                     model_card.JSONSchema["references"]["links"] = model_card.JSONSchema["references"]["links"].concat(matches);
                 }
             }
-            if (id_count == -1 && flag) {
+            if (id_count == 0 && flag) {
                 flag = false;
-                model_card.JSONSchema["modelname"]["description"] = cell['source'];
+                model_card.JSONSchema["modelname"]["title"] = cell['source'][0];
+                model_card.JSONSchema["modelname"]["cell_ids"] = id_count;
             }
             id_count += 1;
+            notebookMarkdown += cell["source"];
 
         } else if (cell['source'][0] != undefined){
             id_count += 1;
@@ -166,70 +177,203 @@ function readCells(content, new_color_map) {
             }
             const cells = cell['source'].split('\n');
             for (let line of cells) {
-                if (line[0] === "%") {
+                if (line[0] === "%" || line[0] === "!") {
                     line = rewriter.rewriteLineMagic(line);
                 }
                 countLines += 1;
                 model_card.JSONSchema[currStage]["lineNumbers"].push(countLines);
+                model_card.line_to_cell[countLines] = id_count;
                 sourceCode += line + '\n';
             }
             notebookCode += sourceCode + '\n';
             let code_cell = createCell(sourceCode, cell['execution_count'], cell['outputs'][0]);
-            //console.log(ic.printInfoCell(code_cell));
-            //console.log("OUTPUT: ", cell["outputs"]);
+
             if (cell["outputs"].length != 0) {
                 for (let output in cell["outputs"]) {
-                    //model_card.outputs[code_cell.persistentId] += output;
                     if (cell["outputs"][output]['output_type'] == 'display_data') {
-                        // model_card.JSONSchema[currStage]["figures"].push(code_cell.persistentId + ".jpg");
-                        model_card.JSONSchema[currStage]["figures"].push(cell["outputs"][output]['data']['image/png']);
+                      /**
+                        var bitmap = new Buffer.from(cell["outputs"][output]['data']['image/png'], 'base64');
+                        //fs.writeFileSync(__dirname + "/../example/" + model_card.JSONSchema["modelname"]["Filename"] + "/" + code_cell.persistentId + ".jpg", bitmap);
+                        var image = "![Hello World](data:image/png;base64," + cell["outputs"][output]['data']['image/png'];
+                        model_card.JSONSchema[currStage]["figures"].push(code_cell.persistentId + ".jpg");
+                    } else if (cell["outputs"][output]['output_type'] == 'stream') {
+                        var info = cell["outputs"][output]["text"];
+                        model_card.JSONSchema[currStage]["outputs"].push(info);
                     }
                 }
             }
-            programbuilder.add(code_cell)
+            **/     
+                        model_card.JSONSchema[currStage]["figures"].push(cell["outputs"][output]['data']['image/png']);
+                    } else if (cell["outputs"][output]['output_type'] == 'stream') {
+                        var info = cell["outputs"][output]["text"];
+                        model_card.JSONSchema[currStage]["outputs"].push(info);
+                    }
+                }
+            }
             model_card.JSONSchema[currStage]["cells"] += JSON.stringify(code_cell.text, null, 2);
-            //console.log(code_cell);
-            //console.log(model_card.JSONSchema[currStage]["cells"]);
             model_card.JSONSchema[currStage]["source"] += sourceCode;
             model_card.JSONSchema[currStage]["cell_ids"].push(id_count);
         }
     }
-    // id_count = persistentId
-    //let code = programbuilder.buildTo("id" + id_count.toString()).text;
-    model_card.JSONSchema["markdown"] = notebookMarkdown;
-    // return [notebookCode, notebookMarkdown, model_card];
+
+    model_card.markdown += notebookMarkdown;
+    printLineDefUse(notebookCode, model_card);
     return model_card.JSONSchema;
 }
 
 
-function printLineDefUse(code, model_card, markdown_contents){
+function printLineDefUse(code, model_card){
     let tree = py.parse(code);
     let cfg = new py.ControlFlowGraph(tree);
-
     const analyzer = new py.DataflowAnalyzer();
-
     const flows = analyzer.analyze(cfg).dataflows;
-    console.log(analyzer.getFuncDefs());
+
     var importScope = {};
     var lineToCode = {};
+    var pLines = model_card.getPLineNumbers();
+    var dcLines = model_card.getDCLineNumbers();
+    var ppLines = model_card.getPPLineNumbers();
+    var mtLines = model_card.getMTLineNumbers();
+    var meLines = model_card.getMELineNumbers();
+
 
     for (let flow of flows.items) {
         let fromNode = py.printNode(flow.fromNode).split("\n");
         let toNode = py.printNode(flow.toNode).split("\n");
+
         lineToCode[flow.fromNode.location.first_line] = fromNode[0];
         lineToCode[flow.fromNode.location.last_line] = fromNode[fromNode.length-1];
         lineToCode[flow.toNode.location.last_line] = toNode[toNode.length-1];
         lineToCode[flow.toNode.location.first_line] = toNode[0];
 
-        //p(analyzer.getFuncDefs());
         if (flow.fromNode.type === "from" || flow.fromNode.type === "import") {
-            importScope[flow.fromNode.location.first_line] = -1;
-        } else if (flow.fromNode.type === "def") {
-            console.log("function");
-            // need to implement line to Cell
-        }
+            if (fromNode[0].includes("sklearn.datasets")) {
+                model_card.JSONSchema["datasets"]["source"] += fromNode[0];
+                model_card.JSONSchema["datasets"]["cell_ids"].push(model_card.line_to_cell[flow.fromNode.location.first_line]);
+            }
 
-        //g.setEdge(flow.fromNode.location.first_line.toString(), flow.toNode.location.first_line.toString());
+            //Check Hyperparameters
+            var input = fromNode[0].toLowerCase();
+            var hyperparam_descriptions = {};
+
+            Object.keys(model_card.hyperparamschemas).forEach(function(key) {
+                if (input.includes(key)) {
+                    var hcontents = fs.readFileSync(__dirname + SCHEMAS_PATH + model_card.hyperparamschemas[key], "utf8");
+                    var hflag = false;
+                    var pflag = false;
+                    var hyperflag = false
+                    var hyperparams = "";
+                    var hproperties = "";
+                    var openbrackets = 0;
+
+                    for (let hline of hcontents.split("\n")) {
+                        if (hline.includes("_hyperparams_schema =")) {
+                            hyperflag = true;
+                        }
+                        if (hyperflag) {
+                            if (hline.includes("'properties':")) {
+                                pflag = true;
+                            }
+                            openbrackets += (hline.match(/{/g)||[]).length
+                            openbrackets -= (hline.match(/}/g)||[]).length
+                        }
+
+                        if (hline.includes("relevantToOptimizer")) {
+                            hflag = true;
+                        }
+                        if (hflag) {
+                            hyperparams += hline;
+                        }
+                        if (hline.includes("],")) {
+                            hflag = false;
+                        }
+                        if (pflag == true && hyperflag == true) {
+                            hproperties = hproperties + hline + "\n";
+                        }
+                        if (hyperflag && openbrackets == 0) {
+                            break;
+                        }
+                    }
+
+                    hyperparams = hyperparams.substr(hyperparams.indexOf('[')+1);
+                    hyperparams = hyperparams.split("]")[0];
+                    hyperparams = hyperparams.split(",");
+                    var parameters = [];
+                    for (let s of hyperparams) {
+                        s = s.replace(/['"]+/g, "");
+                        s = s.trim();
+                        if (s) {
+                            parameters.push(s);
+                        }
+                    }
+
+                    pflag = false;
+                    openbrackets=0;
+                    var desc = "";
+                    var substring = null;
+                    var param = "";
+
+                    function containsAny(str, substrings) {
+                        for (var i = 0; i != substrings.length; i++) {
+                            var substring = "'" + substrings[i] + "'";
+                            if (str.indexOf(substring) != - 1) {
+                                return substring;
+                            }
+                        }
+                        return null;
+                    }
+
+
+                    for (let line of hproperties.split("\n")) {
+                        if (!pflag) {
+                            substring = containsAny(line, parameters);
+                            if (substring != null) {
+                                pflag = true;
+                                param = substring;
+                            }
+                        }
+                        if (pflag) {
+                            if (line.includes("{")) {
+                                openbrackets += 1;
+                            }
+                            if (line.includes("}")) {
+                                openbrackets -=1;
+                            }
+                            desc = desc + line + "\n";
+
+                            if (openbrackets <= 0) {
+                                pflag = false;
+                                hyperparam_descriptions[input] += desc;
+                                desc = "";
+                            }
+
+                        }
+                    }
+                    model_card.JSONSchema["hyperparameters"]["values"] += parameters;
+                    model_card.JSONSchema["hyperparameters"]["lineNumbers"].push(flow.fromNode.location.first_line);
+                    model_card.JSONSchema["hyperparameters"]["cell_ids"].push(model_card.line_to_cell[flow.fromNode.location.first_line]);
+                    model_card.JSONSchema["hyperparameters"]["source"] += fromNode[0] + "\n";
+                    model_card.JSONSchema["hyperparameters"]["description"] = hyperparam_descriptions;
+                }
+            });
+
+
+
+            importScope[flow.fromNode.location.first_line] = -1;
+            model_card.JSONSchema["libraries"]["cell_ids"].push(model_card.line_to_cell[flow.fromNode.location.first_line]);
+        } else if (flow.fromNode.type === "def") {
+            if (flow.fromNode.location.first_line in pLines) {
+                model_card.JSONSchema["plotting"]["functions"].push(py.printNode(flow.fromNode));
+            } else if (flow.fromNode.location.first_line in dcLines) {
+                model_card.JSONSchema["datacleaning"]["functions"].push(py.printNode(flow.fromNode));
+            } else if (flow.fromNode.location.first_line in ppLines) {
+                model_card.JSONSchema["preprocessing"]["functions"].push(py.printNode(flow.fromNode));
+            } else if (flow.fromNode.location.first_line in mtLines) {
+                model_card.JSONSchema["modeltraining"]["functions"].push(py.printNode(flow.fromNode));
+            } else if (flow.fromNode.location.first_line in meLines) {
+                model_card.JSONSchema["modelevaluation"]["functions"].push(py.printNode(flow.fromNode));s
+            }
+        }
 
     }
     var n = countLines;
@@ -239,11 +383,11 @@ function printLineDefUse(code, model_card, markdown_contents){
     for (let flow of flows.items) {
         numgraph.addEdge(flow.fromNode.location.first_line, flow.toNode.location.first_line);
     }
-    findImportScope(importScope, lineToCode, numgraph, model_card, markdown_contents);
+    findImportScope(importScope, lineToCode, numgraph, model_card);
 
 }
 
-function findImportScope(importScope, lineToCode, numgraph, model_card, markdown_contents) {
+function findImportScope(importScope, lineToCode, numgraph, model_card) {
     var importCode = Object.keys(importScope);
     var scopes = {};
     var imports = {};
@@ -251,10 +395,8 @@ function findImportScope(importScope, lineToCode, numgraph, model_card, markdown
     for (let lineNum of importCode) {
         var result = numgraph.findLongestPathSrc(numgraph.edge.length, parseInt(lineNum))
         scopes[lineNum] = result[1];
-        var order = result[1];
-        //console.log(lineToCode[lineNum]);
-        //console.log("START: ", lineNum.toString(), " END: ", scopes[lineNum]);
         imports[lineToCode[lineNum]] = "START:" + lineNum.toString() + "\t" + " END:" + scopes[lineNum];
+
         if (model_card.getDCLineNumbers().includes(parseInt(lineNum))) {
             model_card.JSONSchema["datacleaning"]["imports"].push(lineToCode[lineNum]);
         } else if (model_card.getPPLineNumbers().includes(parseInt(lineNum))) {
@@ -266,14 +408,11 @@ function findImportScope(importScope, lineToCode, numgraph, model_card, markdown
         }
 
     }
-    //console.log(model_card.JSONSchema["preprocessing"]["imports"]);
-    generateLibraryInfo(imports, markdown_contents);
+    generateLibraryInfo(imports);
 }
 
-function generateLibraryInfo(imports, markdown_contents) {
-    // let library_defs = JSON.parse(fs.readFileSync(__dirname + "/../assets/library_defs.json"));
-    //console.log("## Libraries Used ##");
-    markdown_contents += "## Libraries Used ##" + "\n";
+function generateLibraryInfo(imports) {
+    let library_defs = JSON.parse(fs.readFileSync(__dirname + "/../assets/library_defs.json"));
     var libraries = {"pandas":[], "numpy":[], "matplotlib":[], "sklearn":[], "tensorflow":[], "pytorch":[], "OTHER":[]};
 
     for (let im of Object.keys(imports)) {
@@ -293,76 +432,53 @@ function generateLibraryInfo(imports, markdown_contents) {
             libraries["OTHER"].push(im);
         }
     }
-
-    for (let lib of Object.keys(libraries)) {
-        if (libraries[lib].length > 0) {
-            //console.log("### From the library ", lib, " ###");
-            //console.log(library_defs[lib]["description"]);
-            markdown_contents += "#### From the library " + lib + " ####" + "\n";
-            for (let element of libraries[lib]) {
-                markdown_contents += element + "    " + imports[element] + "\n" + "\n";
-            }
-            //libraries[lib].forEach(element => console.log(element, "\t", imports[element]));
-            //console.log("--");
-        }
-    }
+    model_card.JSONSchema["libraries"]["lib"] = libraries;
+    model_card.JSONSchema["libraries"]["info"] = library_defs;
 
 }
 
 
-function generateMarkdown(model_card, notebookCode, markdown_contents) {
+function generateMarkdown(model_card, notebookCode) {
 
+    var markdown_contents = "";
     var keys = Object.keys( model_card.JSONSchema );
 
     for( var i = 0,length = keys.length; i < length; i++ ) {
-        if (keys[i] == 'libraries') {
-            printLineDefUse(notebookCode, model_card);
-        } else {
-            var stageKeys = Object.keys(model_card.JSONSchema[keys[i]]);
-            for (let stageKey of stageKeys) {
-                if (stageKey == 'title') {
-                    markdown_contents += "## " + model_card.JSONSchema[keys[i]][stageKey] + " ##" + "\n";
-                } else {
-                    if (stageKey == 'source') {
-                        //markdown_contents += "### " + stageKey + " ###" + "\n";
-                        //markdown_contents += "``` " + "\n" + model_card.JSONSchema[keys[i]][stageKey] + "\n" + " ```" + "\n";
+        var stageKeys = Object.keys(model_card.JSONSchema[keys[i]]);
+        for (let stageKey of stageKeys) {
+            if (stageKey == 'title') {
+                markdown_contents += "## " + model_card.JSONSchema[keys[i]][stageKey] + " ##" + "\n";
+            } else {
+                if (stageKey == 'source') {
+                    markdown_contents += "### " + stageKey + " ###" + "\n";
+                    markdown_contents += "``` " + "\n" + model_card.JSONSchema[keys[i]][stageKey] + "\n" + " ```" + "\n";
 
-                    } else if (stageKey == "outputs") {
-                        markdown_contents += "### " + stageKey + " ###" + "\n";
-                        markdown_contents += model_card.JSONSchema[keys[i]][stageKey] + "\n";
-                        //var image = document.createElement('img');
-                        //image.src = "data:image/png;base64," + base64JsonData;
+                } else if (stageKey == "outputs") {
+                    markdown_contents += "### " + stageKey + " ###" + "\n";
+                    markdown_contents += model_card.JSONSchema[keys[i]][stageKey] + "\n";
+                    //var image = document.createElement('img');
+                    //image.src = "data:image/png;base64," + base64JsonData;
 
-
-                    } else if (stageKey == "imports" || stageKey == "markdown") {
-                        continue;
-                    } else if (stageKey == "figures") {
-                        markdown_contents += "### " + stageKey + " ###" + "\n";
-                        for (let image of model_card.JSONSchema[keys[i]][stageKey]) {
-                            //![id5](./image/id5.jpg)
-                            markdown_contents += "![" + image + "](" + "../example/" +
-                                model_card.JSONSchema["modelname"]["fileName"] + "/" + image + ")" + "\n";
-                        }
-                    } else if (keys[i] == "references" && stageKey == "links") {
-                        for (let link of model_card.JSONSchema['references']['links']) {
-                            markdown_contents += link + "\n";
-                        }
-                    }else {
-                        markdown_contents += "### " + stageKey + " ###" + "\n";
-                        markdown_contents += JSON.stringify(model_card.JSONSchema[keys[i]][stageKey]) + "\n";
+                } else if (stageKey == "imports" || stageKey == "markdown") {
+                    continue;
+                } else if (stageKey == "figures") {
+                    markdown_contents += "### " + stageKey + " ###" + "\n";
+                    for (let image of model_card.JSONSchema[keys[i]][stageKey]) {
+                        //![id5](./image/id5.jpg)
+                        markdown_contents += "![" + image + "](" + "../example/" +
+                          model_card.JSONSchema["modelname"]["Filename"] + "/" + image + ")" + "\n";
                     }
+                } else if (keys[i] == "references" && stageKey == "links") {
+                    for (let link of model_card.JSONSchema['references']['links']) {
+                        markdown_contents += link + "\n";
+                    }
+                }else {
+                    markdown_contents += "### " + stageKey + " ###" + "\n";
+                    markdown_contents += JSON.stringify(model_card.JSONSchema[keys[i]][stageKey]) + "\n";
                 }
             }
         }
-
-
     }
-    //console.log(markdown_contents);
-    // fs.writeFile('ModelCard.md', markdown_contents, (err) => {
-    //     if (err) throw err;
-    //     console.log('Model card saved');
-    //     //console.log(model_card);
-    // });
 
 }
 
@@ -370,7 +486,6 @@ function generateMarkdown(model_card, notebookCode, markdown_contents) {
  * Generate model card contents in an object
  */
 export function generateModelCard(content) {
-    var new_color = convertColorToLabel(content);
-    const res = readCells(content, new_color);
+    const res = readCells(content);
     return res;
 }

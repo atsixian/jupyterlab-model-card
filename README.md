@@ -1,3 +1,8 @@
+
+# jupyterlab_apod
+
+![Github Actions Status](https://github.com/Deerhound579/jupyterlab-ext-tut/workflows/Build/badge.svg)
+
 # jupyterlab-model-card
 
 ## Requirements
