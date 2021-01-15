@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/camelcase */
 import React from 'react';
 import { EditTwoTone } from '@ant-design/icons';
 import { Notebook } from '@jupyterlab/notebook';
@@ -5,26 +6,28 @@ import { MarkdownCellModel } from '@jupyterlab/cells';
 import { Popconfirm } from 'antd';
 import { jumpToCell } from '../util/notebook_private';
 import { AnnotContent } from '../util/mdExtractor';
+import { stages } from '../constants';
 export interface IQuickFix {
   sectionName: string;
+  sectionTitle: string;
   annotMap: Map<string, AnnotContent>;
   updateAnnotMap: Function;
   notebook: Notebook;
   idx: number; // index for insertion
-  updateMockData: Function;
 }
 
-const annotationContent = (name: string): string =>
-  `# ${name}\n<!-- @md-${name} -->\n<!-- /md-${name} -->`;
+const annotationContent = (name: string, title: string): string => {
+  return `# ${title}\n<!-- @md-${name} -->\n<!-- /md-${name} -->`;
+};
 
 const QuickFix: React.FC<IQuickFix> = ({
   sectionName,
+  sectionTitle,
   annotMap,
   updateAnnotMap,
   notebook,
-  idx,
-  updateMockData
-}) => {
+  idx
+}: IQuickFix) => {
   const existed = annotMap.has(sectionName);
   return existed ? (
     <EditTwoTone
@@ -34,14 +37,16 @@ const QuickFix: React.FC<IQuickFix> = ({
     />
   ) : (
     <Popconfirm
-      title={`Add a new cell for ${sectionName}?`} // TODO: add user-friendly names for sections
-      onConfirm={() => {
+      title={`Add a ${
+        stages.has(sectionName) ? 'description' : 'new cell'
+      } for ${sectionTitle}?`}
+      onConfirm={(): void => {
         notebook.model.cells.insert(
-          idx, // TODO figure out where to insert it
+          idx,
           new MarkdownCellModel({
             cell: {
               cell_type: 'markdown',
-              source: annotationContent(sectionName),
+              source: annotationContent(sectionName, sectionTitle),
               metadata: {}
             }
           })

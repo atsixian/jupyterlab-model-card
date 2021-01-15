@@ -1,20 +1,3 @@
-// @ts-nocheck
-// export var Infocell = /** @class */ (function () {
-//     function InfoCell(text, executionCount, output, persistentId) {
-//         //if (hasError === void 0) { hasError = false; }
-//         let currid = genid();
-//         this.text = text;
-//         this.executionCount = executionCount;
-//         //this.hasError = hasError;
-//         //this.executionEventId = executionEventId || genid();
-//         this.executionEventId = currid;
-//         this.persistentId = persistentId || currid;
-//         this.output = output;
-
-//     }
-//     InfoCell.prototype.deepCopy = function () { return this; }; // not used for Infoing
-//     return InfoCell;
-// }());
 class Infocell {
     constructor(text, executionCount, output, persistentId) {
 
@@ -31,7 +14,7 @@ class Infocell {
 
 var ID = 0;
 function genid() {
-    return 'id' + (ID++);
+    return ID++;
 }
 
 function printInfoCell(cell) {
@@ -46,5 +29,3 @@ function printInfoCell(cell) {
 
 exports.InfoCell = Infocell;
 exports.printInfoCell = printInfoCell;
-
-//# sourceMappingURL=infocell.js.map

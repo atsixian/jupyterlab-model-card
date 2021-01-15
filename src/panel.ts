@@ -1,23 +1,32 @@
-import { INotebookModel, NotebookPanel } from '@jupyterlab/notebook';
-import { StackedPanel } from '@lumino/widgets';
-import { DocumentRegistry } from '@jupyterlab/docregistry';
-import { IDisposable, DisposableDelegate } from '@lumino/disposable';
-import { ModelCardWidget } from './components/ModelCardWidget';
-import { ToolbarButton } from '@jupyterlab/apputils';
 import { JupyterFrontEnd } from '@jupyterlab/application';
-import { command } from './constants';
-import { getAnnotMap } from './util/mdExtractor';
+import { ToolbarButton } from '@jupyterlab/apputils';
+import { IDocumentManager } from '@jupyterlab/docmanager';
+import { DocumentRegistry } from '@jupyterlab/docregistry';
+import { INotebookModel, NotebookPanel } from '@jupyterlab/notebook';
+import { Popup } from '@jupyterlab/statusbar';
+import { DisposableDelegate, IDisposable } from '@lumino/disposable';
+import { StackedPanel } from '@lumino/widgets';
+import { ModelCardWidget } from './components/ModelCardWidget';
+import { PopupWidget } from './components/PopupWidget';
+import {
+  commandCreate,
+  commandModifyStage,
+  modelCardWidgetID
+} from './constants';
 
-export class ExamplePanel extends StackedPanel
+export class ModelCardPanel extends StackedPanel
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel> {
   private _view: ModelCardWidget;
   private _button: ToolbarButton;
+  private _popup: PopupWidget;
   readonly _app: JupyterFrontEnd;
+  readonly _docManager: IDocumentManager;
 
-  constructor(app: JupyterFrontEnd) {
+  constructor(app: JupyterFrontEnd, docManager: IDocumentManager) {
     super();
     this._app = app;
-    this.id = 'model-card';
+    this._docManager = docManager;
+    this.id = modelCardWidgetID;
     this.title.label = 'Model Card';
     this.title.closable = true;
   }
@@ -35,8 +44,8 @@ export class ExamplePanel extends StackedPanel
     const callback = (): void => {
       // console.log(context.model.toJSON());
       // !This ensures our view is synced with model data
-      this._view.updateModel(panel.content, getAnnotMap(panel.content));
-      this._app.commands.execute(command);
+      this._view.updateModel(panel);
+      this._app.commands.execute(commandCreate);
     };
     this._button = new ToolbarButton({
       className: 'myButton',
@@ -45,20 +54,36 @@ export class ExamplePanel extends StackedPanel
       label: 'card'
     });
     this.addWidget(this._button);
-    panel.toolbar.insertItem(0, 'model-card', this._button);
+    panel.toolbar.insertItem(0, modelCardWidgetID, this._button);
 
     // create the frontend view after the context is ready
     context.ready.then(() => {
-      this._view = new ModelCardWidget(
-        panel.content,
-        getAnnotMap(panel.content)
-      );
+      this._view = new ModelCardWidget(panel, this._docManager);
+      this._popup = new PopupWidget(panel.content);
       this.addWidget(this._view);
     });
 
+    this._app.commands.addCommand(commandModifyStage, {
+      label: '[Model Card] Change stage to...',
+      execute: () => {
+        this._popup.updateModel(panel.content);
+        const popup = new Popup({
+          body: this._popup,
+          anchor: panel.content.activeCell,
+          align: 'right'
+        });
+        popup.launch();
+      }
+    });
+
+    this._app.contextMenu.addItem({
+      command: commandModifyStage,
+      selector: '.jp-CodeCell'
+    });
+
     return new DisposableDelegate(() => {
-      this._view.dispose();
-      this._button.dispose();
+      this.widgets.forEach(widget => widget.dispose());
+      this._popup.dispose();
     });
   }
 }

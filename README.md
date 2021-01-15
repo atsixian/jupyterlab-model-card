@@ -1,42 +1,33 @@
+
 # jupyterlab_apod
 
 ![Github Actions Status](https://github.com/Deerhound579/jupyterlab-ext-tut/workflows/Build/badge.svg)
 
-
-## TO DO
-
-Merge main.js from my own model card repo with this repo.
-
-## How to Contribute
-
-To push to Grace branch:
-Run ```git branch -a``` to make sure you're on the right branch "grace".
-
-Run ```git push -u origin grace``` to push to origin/grace branch"
-
-
+# jupyterlab-model-card
 
 ## Requirements
 
-* JupyterLab >= 2.0
+- JupyterLab >= 2.0
 
 ## Install
 
 ```bash
-jupyter labextension install jupyterlab-apod
+jupyter labextension install jupyterlab-model-card
 ```
 
-## Contributing
+## Development
+
+### [Resources for extension development](https://www.notion.so/3e617d2f2d56464a8c8f7f19890c36e7?v=61474bad874443b39e8925d47401b790)
 
 ### Install
 
 The `jlpm` command is JupyterLab's pinned version of
 [yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use
-`yarn` or `npm` in lieu of `jlpm` below.
+`yarn` or `npm` instead of `jlpm` below.
 
 ```bash
 # Clone the repo to your local environment
-# Move to jupyterlab_apod directory
+# Move to jupyterlab-model-card directory
 
 # Install dependencies
 jlpm
@@ -64,6 +55,5 @@ Now every change will be built locally and bundled into JupyterLab. Be sure to r
 ### Uninstall
 
 ```bash
-
-jupyter labextension uninstall jupyterlab-apod
+jupyter labextension uninstall jupyterlab-model-card
 ```

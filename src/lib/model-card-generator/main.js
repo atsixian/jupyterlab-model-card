@@ -5,6 +5,7 @@
 
 var py = require("modified-python-program-analysis/dist/es5");
 var graphing = require("./Graph.js").Graph;
+var stages = require("../../constants").stages;
 // var fs = require('fs');
 // var path = require('path');
 var ic = require("./infocell");
@@ -30,7 +31,8 @@ class ModelCard {
             datacleaning:{title:"Data Cleaning", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
             preprocessing:{title:"Preprocessing", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
             modeltraining:{title:"Model Training", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
-            modelevaluation:{title:"Evaluation", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]}
+            modelevaluation:{title:"Evaluation", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:[], figures:[], description:"", outputs:[]},
+            misc:{title:"Miscellaneous", cell_ids:[], cells:[], lineNumbers:[], source:"", markdown:"", imports:[], functions:"", figures:[], description:"", outputs:[]}
         }
         this.line_to_cell = {};
         this.markdown = "";
@@ -124,12 +126,12 @@ function readCells(content) {
     var currStage = "misc";
     let id_count = 0;
     let flag = true;
-    let programbuilder = new py.ProgramBuilder();
-    model_card.JSONSchema["modelname"]["Filename"] = filePath.split("/").slice(-1).toString();
+    //model_card.JSONSchema["modelname"]["Filename"] = filePath.split("/").slice(-1).toString();
     //console.log();
     //fs.mkdirSync("../example/" + model_card.JSONSchema["modelname"]["Filename"], { recursive: true })
 
     for (let cell of jsondata['cells']) {
+        let currStage = "misc";
         let sourceCode = "";
         if (cell['cell_type'] === 'markdown') {
             model_card.JSONSchema[currStage]["markdown"] += "\n" + cell['source'];
@@ -151,30 +153,37 @@ function readCells(content) {
         } else if (cell['source'][0] != undefined){
             id_count += 1;
             var key = cell['execution_count'].toString();
+            // user reclassification
             if (key in new_color_map) {
                 var stage = new_color_map[key];
-                if (stage == "Data collection" || stage == "Data cleaning" || stage == "Data labelling") {
-                    currStage = "datacleaning";
-                } else if (stage == "Feature Engineering") {
-                    currStage = "preprocessing";
-                } else if (stage == "Training") {
-                    currStage = "modeltraining";
-                } else if (stage == "Evaluation") {
-                    currStage = "modelevaluation";
-                } else if (stage == "Plotting") {
-                    currStage = "plotting";
+                const metadataStage = cell['metadata']['stage'];
+                // user reclassification
+                if ( metadataStage !== undefined && stages.has(metadataStage)) {
+                    currStage = metadataStage;
+                }
+                else {
+                    if (stage == "Data collection" || stage == "Data cleaning" || stage == "Data labelling") {
+                        currStage = "datacleaning";
+                    } else if (stage == "Feature Engineering") {
+                        currStage = "preprocessing";
+                    } else if (stage == "Training") {
+                        currStage = "modeltraining";
+                    } else if (stage == "Evaluation") {
+                        currStage = "modelevaluation";
+                    } else if (stage == "Plotting") {
+                        currStage = "plotting";
+                    }
                 }
             }
-
-            for (let line of cell['source']) {
+            const cells = cell['source'].split('\n');
+            for (let line of cells) {
                 if (line[0] === "%" || line[0] === "!") {
                     line = rewriter.rewriteLineMagic(line);
-                    line = '#' + line;
                 }
                 countLines += 1;
                 model_card.JSONSchema[currStage]["lineNumbers"].push(countLines);
                 model_card.line_to_cell[countLines] = id_count;
-                sourceCode += line;
+                sourceCode += line + '\n';
             }
             notebookCode += sourceCode + '\n';
             let code_cell = createCell(sourceCode, cell['execution_count'], cell['outputs'][0]);
@@ -182,6 +191,7 @@ function readCells(content) {
             if (cell["outputs"].length != 0) {
                 for (let output in cell["outputs"]) {
                     if (cell["outputs"][output]['output_type'] == 'display_data') {
+                      /**
                         var bitmap = new Buffer.from(cell["outputs"][output]['data']['image/png'], 'base64');
                         //fs.writeFileSync(__dirname + "/../example/" + model_card.JSONSchema["modelname"]["Filename"] + "/" + code_cell.persistentId + ".jpg", bitmap);
                         var image = "![Hello World](data:image/png;base64," + cell["outputs"][output]['data']['image/png'];
@@ -192,8 +202,15 @@ function readCells(content) {
                     }
                 }
             }
-
-            model_card.JSONSchema[currStage]["cells"] += code_cell;
+            **/     
+                        model_card.JSONSchema[currStage]["figures"].push(cell["outputs"][output]['data']['image/png']);
+                    } else if (cell["outputs"][output]['output_type'] == 'stream') {
+                        var info = cell["outputs"][output]["text"];
+                        model_card.JSONSchema[currStage]["outputs"].push(info);
+                    }
+                }
+            }
+            model_card.JSONSchema[currStage]["cells"] += JSON.stringify(code_cell.text, null, 2);
             model_card.JSONSchema[currStage]["source"] += sourceCode;
             model_card.JSONSchema[currStage]["cell_ids"].push(id_count);
         }
@@ -469,7 +486,6 @@ function generateMarkdown(model_card, notebookCode) {
  * Generate model card contents in an object
  */
 export function generateModelCard(content) {
-    debugger
     const res = readCells(content);
     return res;
 }
