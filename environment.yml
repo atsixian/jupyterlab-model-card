@@ -1,0 +1,9 @@
+name: jupyterlab-ext
+channels:
+  - defaults
+dependencies:
+  - git
+  - jupyterlab
+  - nodejs
+prefix: /Users/lisixian/miniconda3/envs/jupyterlab-ext
+
