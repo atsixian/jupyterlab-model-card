@@ -25,6 +25,11 @@ The `jlpm` command is JupyterLab's pinned version of
 [yarn](https://yarnpkg.com/) that is installed with JupyterLab. You may use
 `yarn` or `npm` instead of `jlpm` below.
 
+First create a conda environment from the environment.yml file using the command below. Then activate the environment.
+```bash
+conda env create -f environment.yml
+```
+
 ```bash
 # Clone the repo to your local environment
 # Move to jupyterlab-model-card directory
